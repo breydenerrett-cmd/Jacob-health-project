@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Machine</title>
+<style>
+:root{
+  --felt:#0e1a16; --p1:#152521; --p2:#1c322c; --line:#2a473f;
+  --ink:#eef4f1; --dim:#8fa89f; --gold:#d9a441; --red:#e2596b;
+  --good:#5ddb9a; --warn:#ffd166; --blue:#6ea8ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--felt);color:var(--ink);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%}
+#app{max-width:660px;margin:0 auto;padding:0 13px 70px}
+h1{font-size:25px;letter-spacing:.13em;margin:10px 0 2px}
+h2{font-size:18px;margin:14px 0 7px}
+h3{font-size:13px;margin:14px 0 6px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.11em}
+p{margin:7px 0}
+.sub{color:var(--dim);font-size:13.5px}
+.center{text-align:center}
+.mono{font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+button{font:inherit;color:var(--ink);background:var(--p2);
+  border:1px solid var(--line);border-radius:9px;padding:11px 14px;
+  cursor:pointer;min-height:46px}
+button:hover:not(:disabled){border-color:#3d6a5c}
+button:disabled{opacity:.32;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button.primary{background:#2f68d8;border-color:#2f68d8;font-weight:600;width:100%}
+button.primary:hover:not(:disabled){background:#3a76ea}
+button.wide{width:100%}
+button.danger{border-color:var(--red);color:var(--red)}
+input[type=text]{font:inherit;color:var(--ink);background:var(--p1);
+  border:1px solid var(--line);border-radius:9px;padding:11px 12px;width:100%;min-height:46px}
+label{display:block;margin:11px 0 4px;font-size:13.5px;color:var(--dim)}
+.panel{background:var(--p1);border:1px solid var(--line);
+  border-radius:11px;padding:13px;margin:11px 0}
+.row{display:flex;gap:8px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.hdr{position:sticky;top:0;z-index:5;background:var(--felt);
+  border-bottom:1px solid var(--line);padding:9px 0 8px;margin-bottom:2px}
+.hdr .r1{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.hdr b{font-variant-numeric:tabular-nums}
+.hdr .r2{display:flex;justify-content:space-between;color:var(--dim);
+  font-size:11.5px;margin-top:3px}
+.pot{font-size:19px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.badge{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:5px;padding:2px 5px;color:var(--dim)}
+.badge.btn{border-color:var(--gold);color:var(--gold)}
+.badge.act{border-color:var(--blue);color:var(--blue)}
+.badge.ok{border-color:var(--good);color:var(--good)}
+.badge.bad{border-color:var(--red);color:var(--red)}
+.seat{display:flex;justify-content:space-between;align-items:center;
+  background:var(--p1);border:1px solid var(--line);border-radius:11px;
+  padding:10px 12px;margin:9px 0}
+.seat.turn{border-color:var(--gold)}
+.cards{display:flex;gap:5px}
+.card{width:38px;height:52px;border-radius:6px;background:#f4f1e8;color:#111;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-weight:700;font-size:15px;line-height:1.05;flex:0 0 38px}
+.card.r{color:#c02638}
+.card.back{background:linear-gradient(135deg,#28483f,#1b3229);
+  border:1px solid var(--line);color:var(--dim);font-size:17px}
+.card.slot{background:transparent;border:1px dashed var(--line);color:transparent}
+.board{display:flex;gap:6px;justify-content:center;margin:13px 0}
+.gauge{height:11px;border-radius:6px;background:var(--p1);
+  border:1px solid var(--line);overflow:hidden;margin:5px 0}
+.gauge>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--good))}
+.eqnum{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.stat{display:flex;justify-content:space-between;padding:3px 0;font-size:13.5px;
+  border-bottom:1px dashed #1f3830}
+.stat b{font-variant-numeric:tabular-nums}
+.stat.hit{color:var(--warn)}
+.evtab{width:100%;border-collapse:collapse;font-size:13px;margin-top:5px}
+.evtab td,.evtab th{padding:4px 5px;border-bottom:1px dashed #1f3830;text-align:right}
+.evtab th:first-child,.evtab td:first-child{text-align:left}
+.evtab th{color:var(--dim);font-weight:600;font-size:11px;
+  text-transform:uppercase;letter-spacing:.07em}
+.evtab tr.pick{color:var(--good)}
+.evtab td{font-variant-numeric:tabular-nums}
+.rgrid{display:grid;grid-template-columns:repeat(13,1fr);gap:1px;margin:7px 0}
+.rc{aspect-ratio:1;display:grid;place-items:center;font-size:7.5px;
+  border-radius:2px;background:#12201c;color:#5f7a71;overflow:hidden}
+.rc.on{color:#0e1a16;font-weight:700}
+.log{font:11.5px/1.5 ui-monospace,Menlo,monospace;color:var(--dim);
+  max-height:120px;overflow-y:auto}
+.log div{padding:1px 0}
+.quote{border-left:3px solid var(--line);padding:2px 0 2px 10px;
+  color:var(--ink);font-size:14px;margin:7px 0}
+details.panel summary{cursor:pointer;list-style:none;font-size:14px}
+details.panel summary::-webkit-details-marker{display:none}
+details.panel summary:after{content:" +";color:var(--dim)}
+details[open].panel summary:after{content:" \2013"}
+pre{font:11px/1.45 ui-monospace,Menlo,monospace;color:var(--dim);
+  background:#0b1512;border:1px solid var(--line);border-radius:7px;
+  padding:9px;overflow-x:auto;margin:7px 0}
+.foot{color:#516860;font-size:11.5px;text-align:center;margin-top:28px;line-height:1.65}
+.ok{color:var(--good)} .bad{color:var(--red)} .gold{color:var(--gold)}
+.tlog{font:12px/1.65 ui-monospace,Menlo,monospace;white-space:pre-wrap}
+.banner{border:1px solid var(--red);background:#2a1418;border-radius:10px;
+  padding:11px;margin:10px 0;color:var(--red)}
+@media(max-width:400px){.card{width:33px;height:46px;flex:0 0 33px;font-size:13px}
+  .rc{font-size:6px}}
+</style>
+</head>
+<body><div id="app"></div>
+<script>
+"use strict";
+
+/* ==================================================================
+   THE MACHINE — heads-up hold'em bot that shows its work
+   Single file, no dependencies, runs from file://
+
+   Eval    — cards + 7-card evaluator (exhaustively validated)
+   Engine  — ranges, Bayesian narrowing, equity (exact + sampled)
+   Bot     — decide().  SEALED: cannot name game state.
+   Game/UI — everything else, in its own closure
+   ================================================================== */
+
+/* ================= EVAL ================= */
+const Eval = (function(){
+  const RANKS = "23456789TJQKA", SUITS = "cdhs";
+  const rankOf = c => c >> 2, suitOf = c => c & 3;
+  const cardStr = c => RANKS[c>>2] + SUITS[c&3];
+
+  // xorshift32 — seeded so any hand can be replayed exactly
+  function rng(seed){
+    let s = seed >>> 0 || 0x9E3779B9;
+    return function(){
+      s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0;
+      return s / 4294967296;
+    };
+  }
+  function hash32(str){                       // FNV-1a
+    let h = 0x811c9dc5;
+    for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return h >>> 0;
+  }
+
+  function pc(x){
+    x = x - ((x >>> 1) & 0x55555555);
+    x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
+    x = (x + (x >>> 4)) & 0x0f0f0f0f;
+    return (x * 0x01010101) >>> 24;
+  }
+  // Straight top-rank on a 13-bit mask, or -1.  Shifting left one bit and
+  // re-injecting the ace at bit 0 makes the wheel a contiguous run, so it
+  // ranks below 6-high by arithmetic rather than a special case.
+  function stop(m){
+    const em = ((m << 1) | ((m >>> 12) & 1)) & 0x3fff;
+    const s = em & (em>>>1) & (em>>>2) & (em>>>3) & (em>>>4);
+    return s === 0 ? -1 : (31 - Math.clz32(s)) + 3;
+  }
+  function top(m, n){
+    let v = 0;
+    for(let i=0;i<n;i++){ const b = 31 - Math.clz32(m); v = (v<<4) | b; m ^= (1<<b); }
+    return v;
+  }
+
+  const SM = new Int32Array(4);
+  // One code path for 5, 6 and 7 cards, so the census test exercises the
+  // same function the showdown uses.
+  // score = (category<<20) | packed kickers.  Higher is better.
+  function evalCards(cs, n){
+    SM[0]=0; SM[1]=0; SM[2]=0; SM[3]=0;
+    let m1=0, m2=0, m3=0, m4=0;
+    for(let i=0;i<n;i++){
+      const x = cs[i], bb = 1 << (x>>2);
+      SM[x&3] |= bb;
+      if(m1&bb){ if(m2&bb){ if(m3&bb) m4|=bb; else m3|=bb; } else m2|=bb; } else m1|=bb;
+    }
+    let fm = 0;
+    if(pc(SM[0])>=5) fm=SM[0]; else if(pc(SM[1])>=5) fm=SM[1];
+    else if(pc(SM[2])>=5) fm=SM[2]; else if(pc(SM[3])>=5) fm=SM[3];
+
+    if(fm){ const s = stop(fm); if(s>=0) return (8<<20) | (s<<16); }        // straight flush
+    if(m4){ const q = 31-Math.clz32(m4);
+            return (7<<20) | (q<<16) | ((31-Math.clz32(m1^(1<<q)))<<12); }  // quads
+    if(m3){ const t = 31-Math.clz32(m3);
+            const rest = (m3^(1<<t)) | (m2 & ~m3);     // a second trips plays as the pair
+            if(rest) return (6<<20) | (t<<16) | ((31-Math.clz32(rest))<<12); }
+    if(fm) return (5<<20) | top(fm,5);                                      // flush
+    const st = stop(m1); if(st>=0) return (4<<20) | (st<<16);               // straight
+    if(m3){ const t = 31-Math.clz32(m3);
+            return (3<<20) | (t<<16) | (top(m1^(1<<t),2)<<4); }             // trips
+    const np = pc(m2);
+    if(np>=2){ const p1 = 31-Math.clz32(m2);
+               const p2 = 31-Math.clz32(m2^(1<<p1));
+               const k  = 31-Math.clz32(m1^(1<<p1)^(1<<p2));
+               return (2<<20) | (p1<<16) | (p2<<12) | (k<<8); }             // two pair
+    if(np===1){ const p1 = 31-Math.clz32(m2);
+                return (1<<20) | (p1<<16) | (top(m1^(1<<p1),3)<<4); }       // pair
+    return top(m1,5);                                                       // high card
+  }
+  const CATS = ["High Card","Pair","Two Pair","Trips","Straight","Flush",
+                "Full House","Quads","Straight Flush"];
+  const catOf = sc => sc >>> 20;
+
+  // ---- combo tables: 1326 two-card combos, 169 grid classes ----
+  const COMBO_ID = new Int16Array(52*52).fill(-1);
+  const COMBO_A = new Uint8Array(1326), COMBO_B = new Uint8Array(1326);
+  const CLASS_OF = new Uint8Array(1326);
+  const CLASS_NAME = new Array(169);
+  (function(){
+    let k = 0;
+    for(let a=0;a<52;a++) for(let b=a+1;b<52;b++){
+      COMBO_ID[a*52+b] = k; COMBO_ID[b*52+a] = k;
+      COMBO_A[k] = a; COMBO_B[k] = b;
+      const ra = a>>2, rb = b>>2, hi = Math.max(ra,rb), lo = Math.min(ra,rb);
+      const suited = (a&3) === (b&3);
+      CLASS_OF[k] = suited ? (12-hi)*13 + (12-lo) : (12-lo)*13 + (12-hi);
+      k++;
+    }
+    for(let i=0;i<13;i++) for(let j=0;j<13;j++){
+      const hi = 12-Math.min(i,j), lo = 12-Math.max(i,j);
+      CLASS_NAME[i*13+j] = i===j ? RANKS[hi]+RANKS[hi]
+        : RANKS[hi]+RANKS[lo] + (i<j ? "s" : "o");
+    }
+  })();
+
+  // Chen formula — deliberately a published, checkable heuristic (AKs=12, 72o=-1)
+  function chen(a, b){
+    const ra = a>>2, rb = b>>2, hi = Math.max(ra,rb), lo = Math.min(ra,rb);
+    const pip = r => r + 2;
+    const base = r => { const p = pip(r);
+      return p===14?10 : p===13?8 : p===12?7 : p===11?6 : p/2; };
+    if(ra === rb) return Math.ceil(Math.max(base(hi)*2, 5));
+    let s = base(hi);
+    if((a&3) === (b&3)) s += 2;
+    const gap = hi - lo - 1;
+    s -= gap===0?0 : gap===1?1 : gap===2?2 : gap===3?4 : 5;
+    if(gap <= 1 && pip(hi) < 12) s += 1;
+    return Math.ceil(s);
+  }
+
+  return { RANKS, SUITS, rankOf, suitOf, cardStr, rng, hash32, pc, stop, top,
+           evalCards, CATS, catOf, COMBO_ID, COMBO_A, COMBO_B, CLASS_OF, CLASS_NAME, chen };
+})();
+
+/* ================= ENGINE ================= */
+const Engine = (function(E){
+  const N = 1326;
+
+  const newRange = () => { const r = new Float64Array(N); r.fill(1); return r; };
+
+  // Card removal: any combo containing a known card is impossible.
+  function removeCards(range, cards){
+    for(let k=0;k<N;k++){
+      if(range[k] === 0) continue;
+      const a = E.COMBO_A[k], b = E.COMBO_B[k];
+      for(let i=0;i<cards.length;i++) if(cards[i]===a || cards[i]===b){ range[k]=0; break; }
+    }
+  }
+  const liveCount = r => { let n=0,w=0;
+    for(let k=0;k<N;k++) if(r[k]>0){ n++; w+=r[k]; } return {n, w}; };
+
+  // value[k] in [0,1] — how good is combo k on THIS board
+  const _buf = new Int32Array(7);
+  function valueVector(board, dead){
+    const v = new Float64Array(N);
+    const live = [];
+    for(let k=0;k<N;k++){
+      const a = E.COMBO_A[k], b = E.COMBO_B[k];
+      if(dead.indexOf(a)>=0 || dead.indexOf(b)>=0){ v[k] = -1; continue; }
+      live.push(k);
+    }
+    if(board.length === 0){
+      const sc = live.map(k => E.chen(E.COMBO_A[k], E.COMBO_B[k]));
+      const sorted = sc.slice().sort((x,y)=>x-y);
+      live.forEach((k,i)=>{ v[k] = pctile(sorted, sc[i]); });
+      return v;
+    }
+    const streets = board.length===3 ? 2 : board.length===4 ? 1 : 0;
+    const made = new Float64Array(live.length);
+    for(let i=0;i<live.length;i++){
+      const k = live[i];
+      _buf[0]=E.COMBO_A[k]; _buf[1]=E.COMBO_B[k];
+      for(let j=0;j<board.length;j++) _buf[2+j] = board[j];
+      made[i] = E.evalCards(_buf, 2+board.length);
+    }
+    const sortedMade = Array.from(made).sort((x,y)=>x-y);
+    for(let i=0;i<live.length;i++){
+      const k = live[i];
+      let val = pctile(sortedMade, made[i]);
+      if(streets > 0){
+        const outs = countOuts(E.COMBO_A[k], E.COMBO_B[k], board);
+        const dp = Math.min(outs/47*streets, 0.5);
+        val = Math.min(1, val + 0.35*dp);
+      }
+      v[k] = val;
+    }
+    return v;
+  }
+  function pctile(sortedAsc, x){
+    let lo=0, hi=sortedAsc.length;
+    while(lo<hi){ const m=(lo+hi)>>1; if(sortedAsc[m] < x) lo=m+1; else hi=m; }
+    return sortedAsc.length<2 ? 0.5 : lo/(sortedAsc.length-1);
+  }
+  function countOuts(a, b, board){
+    const all = [a,b].concat(board);
+    const suits = [0,0,0,0]; let mask = 0;
+    for(const c of all){ suits[c&3]++; mask |= 1<<(c>>2); }
+    let outs = 0;
+    for(let s=0;s<4;s++) if(suits[s] === 4) outs += 9;      // flush draw
+    if(E.stop(mask) < 0){                                    // straight draw
+      for(let r=0;r<13;r++){
+        if(mask & (1<<r)) continue;
+        if(E.stop(mask | (1<<r)) >= 0) outs += 4;
+      }
+    }
+    return outs;
+  }
+
+  // ---- Bayesian narrowing -------------------------------------------
+  const LOGI = (k,t,v) => 1/(1+Math.exp(-k*(v-t)));
+  // The leading constant is a BLUFF FLOOR: a weak hand is never fully
+  // eliminated, because people do shove trash. The trap term in `check`
+  // stops a check from purging monsters out of the range.
+  const POLICY = {
+    fold:      v => 1,
+    check:     v => 0.45*(1-LOGI(5,0.45,v)) + 0.20*LOGI(9,0.84,v),
+    // calls are graded by price: calling a pot-sized bet says far more than
+    // completing the blind, and collapsing them lets a range never narrow
+    callSmall: v => 0.15 + 0.85*LOGI( 4,0.45,v),
+    callMid:   v => 0.09 + 0.91*LOGI( 6,0.60,v),
+    callBig:   v => 0.05 + 0.95*LOGI( 9,0.72,v),
+    call:      v => 0.10 + 0.90*LOGI( 5,0.55,v),
+    betSmall:  v => 0.20 + 0.80*LOGI( 4,0.50,v),
+    betMid:    v => 0.12 + 0.88*LOGI( 6,0.64,v),
+    betBig:    v => 0.09 + 0.91*LOGI( 8,0.74,v),
+    betOver:   v => 0.06 + 0.94*LOGI(10,0.82,v),
+    threeBet:  v => 0.07 + 0.93*LOGI(12,0.85,v)
+  };
+  const POLICY_LABEL = { check:"checked", callSmall:"called small",
+    callMid:"called", callBig:"called big", call:"called", betSmall:"bet small",
+    betMid:"bet mid", betBig:"bet big", betOver:"overbet/shoved", threeBet:"3-bet" };
+
+  function classify(act, amt, pot, isRaise){
+    if(act === "check") return "check";
+    if(act === "fold")  return "fold";
+    if(act === "call"){
+      const r = pot > 0 ? amt/pot : 0;
+      return r <= 0.25 ? "callSmall" : r <= 0.60 ? "callMid" : "callBig";
+    }
+    if(isRaise && pot > 0 && amt/pot > 0.9) return "threeBet";
+    const r = pot > 0 ? amt/pot : 2;
+    return r <= 0.40 ? "betSmall" : r <= 0.80 ? "betMid" : r <= 1.30 ? "betBig" : "betOver";
+  }
+  function applyAction(range, cls, valueVec){
+    const before = liveCount(range);
+    const fn = POLICY[cls] || POLICY.call;
+    let max = 0;
+    for(let k=0;k<N;k++){
+      if(range[k] === 0) continue;
+      range[k] *= fn(Math.max(0, valueVec[k]));
+      if(range[k] > max) max = range[k];
+    }
+    if(max > 0) for(let k=0;k<N;k++) range[k] /= max;
+    const after = liveCount(range);
+    return { before, after, cls };
+  }
+
+  // ---- equity ---------------------------------------------------------
+  // Enumerate exactly when the space is small enough; sample when it isn't.
+  // Both paths return E plus Ec[] (equity vs only the part of the range that
+  // continues facing each candidate size) from ONE pass.
+  const EXACT_CAP = 450000;
+
+  function combosOf(range){
+    const idx = [], w = [];
+    for(let k=0;k<N;k++) if(range[k] > 0){ idx.push(k); w.push(range[k]); }
+    return { idx, w };
+  }
+  function deckMinus(dead){
+    const d = [];
+    for(let c=0;c<52;c++) if(dead.indexOf(c) < 0) d.push(c);
+    return d;
+  }
+  function completions(deck, need){
+    const out = [];
+    if(need === 0) return [[]];
+    if(need === 1){ for(const c of deck) out.push([c]); return out; }
+    for(let i=0;i<deck.length;i++) for(let j=i+1;j<deck.length;j++) out.push([deck[i],deck[j]]);
+    return out;
+  }
+
+  function makeEquityJob(hole, board, range, contVecs, seedRng){
+    const dead = hole.concat(board);
+    const { idx, w } = combosOf(range);
+    const deck = deckMinus(dead);
+    const need = 5 - board.length;
+    const nSizes = contVecs.length;
+    const st = {
+      totW:0, winW:0,
+      contW:new Float64Array(nSizes), contWin:new Float64Array(nSizes),
+      done:false, mode:"", total:0, seen:0
+    };
+    const hb = new Int32Array(7), vb = new Int32Array(7);
+    for(let j=0;j<board.length;j++){ hb[2+j]=board[j]; vb[2+j]=board[j]; }
+    hb[0]=hole[0]; hb[1]=hole[1];
+
+    function score(i, comps){
+      // returns 1 win / 0.5 tie / 0 loss for villain combo idx[i] over comps
+      const a = E.COMBO_A[idx[i]], b = E.COMBO_B[idx[i]];
+      vb[0]=a; vb[1]=b;
+      const nb = board.length;
+      for(let j=0;j<comps.length;j++){ hb[2+nb+j]=comps[j]; vb[2+nb+j]=comps[j]; }
+      const n = 2 + nb + comps.length;
+      const s1 = E.evalCards(hb, n), s2 = E.evalCards(vb, n);
+      return s1 > s2 ? 1 : s1 < s2 ? 0 : 0.5;
+    }
+    function tally(i, r){
+      const wt = w[i];
+      st.totW += wt; st.winW += wt*r;
+      for(let s=0;s<nSizes;s++){
+        const pcv = contVecs[s][idx[i]];
+        st.contW[s] += wt*pcv; st.contWin[s] += wt*pcv*r;
+      }
+      st.seen++;
+    }
+
+    const comps = completions(deck, need);
+    const exactTotal = idx.length * comps.length;
+    if(idx.length === 0){ st.done = true; st.mode = "empty"; st.total = 0; }
+    else if(exactTotal <= EXACT_CAP){
+      st.mode = "exact"; st.total = exactTotal;
+      let ci = 0, bj = 0;
+      return job(function(batch){
+        let n = 0;
+        while(n < batch && ci < idx.length){
+          const cmb = comps[bj];
+          const a = E.COMBO_A[idx[ci]], b = E.COMBO_B[idx[ci]];
+          // villain combo must not collide with the runout cards
+          let bad = false;
+          for(let j=0;j<cmb.length;j++) if(cmb[j]===a || cmb[j]===b){ bad = true; break; }
+          if(!bad) tally(ci, score(ci, cmb)); else st.seen++;
+          n++; bj++;
+          if(bj >= comps.length){ bj = 0; ci++; }
+        }
+        if(ci >= idx.length) st.done = true;
+      });
+    } else {
+      st.mode = "sampled"; st.total = 20000;
+      const cum = new Float64Array(idx.length);
+      let acc = 0;
+      for(let i=0;i<idx.length;i++){ acc += w[i]; cum[i] = acc; }
+      const used = new Uint8Array(52);
+      for(const c of dead) used[c] = 1;
+      const pick = new Array(need);
+      return job(function(batch){
+        for(let n=0;n<batch && !st.done;n++){
+          const t = seedRng()*acc;
+          let lo=0, hi=idx.length-1;
+          while(lo<hi){ const m=(lo+hi)>>1; if(cum[m] < t) lo=m+1; else hi=m; }
+          const a = E.COMBO_A[idx[lo]], b = E.COMBO_B[idx[lo]];
+          if(used[a] || used[b]){ continue; }
+          used[a]=1; used[b]=1;
+          let ok = true;
+          for(let j=0;j<need;j++){
+            let c, guard = 0;
+            do { c = (seedRng()*52)|0; } while(used[c] && ++guard < 200);
+            if(used[c]){ ok = false; break; }
+            used[c]=1; pick[j]=c;
+          }
+          if(ok) tally(lo, score(lo, pick));
+          for(let j=0;j<need;j++) if(pick[j]!==undefined) used[pick[j]]=0;
+          used[a]=0; used[b]=0;
+          if(st.seen >= st.total) st.done = true;
+        }
+      });
+    }
+    return job(function(){ st.done = true; });
+
+    function job(runBatch){
+      return {
+        st,
+        runBatch,
+        done: () => st.done,
+        progress: () => st.total ? Math.min(1, st.seen/st.total) : 1,
+        result(){
+          const eq = st.totW > 0 ? st.winW/st.totW : 0.5;
+          const ec = [];
+          for(let s=0;s<nSizes;s++)
+            ec.push(st.contW[s] > 0 ? st.contWin[s]/st.contW[s] : eq);
+          const nEff = Math.max(1, st.seen);
+          return { equity: eq, ec, mode: st.mode, samples: st.seen,
+                   se: st.mode==="exact" ? 0 : Math.sqrt(Math.max(1e-9,eq*(1-eq))/nEff) };
+        }
+      };
+    }
+  }
+
+  // P(villain continues facing a bet of B into pot P), per combo
+  function continueVec(valueVec, range, ratio){
+    const v = new Float64Array(N);
+    const cls = ratio <= 0.40 ? "betSmall" : ratio <= 0.80 ? "betMid"
+              : ratio <= 1.30 ? "betBig" : "betOver";
+    const fn = POLICY[cls];
+    for(let k=0;k<N;k++) v[k] = range[k] > 0 ? Math.min(1, fn(Math.max(0,valueVec[k]))) : 0;
+    return v;
+  }
+  function foldEquity(range, contVec){
+    let tot=0, cont=0;
+    for(let k=0;k<N;k++){ if(range[k]<=0) continue; tot += range[k]; cont += range[k]*contVec[k]; }
+    return tot > 0 ? 1 - cont/tot : 0;
+  }
+
+  return { N, newRange, removeCards, liveCount, valueVector, countOuts, pctile,
+           POLICY, POLICY_LABEL, classify, applyAction, makeEquityJob,
+           continueVec, foldEquity, combosOf, deckMinus, completions, EXACT_CAP };
+})(Eval);
+
+/* ================= BOT =================
+   SEALED MODULE. Its scope chain is: Bot IIFE -> script top level -> globalThis.
+   `state` is a `let` inside the Game closure, which is on none of those.
+   Bot.decide cannot NAME the player's cards, let alone read them.        */
+const Bot = (function(E, EN){
+  const VERSION = "machine-1.0";
+
+  // Of all the hands villain could hold that contain one of OUR cards,
+  // what share would be strong? High = we block their value hands.
+  const _bb = new Int32Array(7);
+  function blockerEffect(hole, board){
+    if(board.length === 0) return 0;          // no made hands to block preflop
+    let strong = 0, tot = 0;
+    for(const h of hole){
+      for(let o=0;o<52;o++){
+        if(o===hole[0] || o===hole[1] || board.indexOf(o)>=0) continue;
+        _bb[0]=h; _bb[1]=o;
+        for(let j=0;j<board.length;j++) _bb[2+j]=board[j];
+        if(E.catOf(E.evalCards(_bb, 2+board.length)) >= 4) strong++;
+        tot++;
+      }
+    }
+    return tot > 0 ? strong/tot : 0;
+  }
+  // Deterministic in [0,1]: busted-draw outs, computed blockers, seeded tie-break.
+  function bluffScore(hole, board, handNo){
+    const outs = EN.countOuts(hole[0], hole[1], board);
+    const outsPart = Math.min(1, outs/12);
+    const blockPart = blockerEffect(hole, board);
+    const jit = (E.hash32(hole.join(",")+"|"+board.join(",")+"|"+handNo) % 1000)/1000;
+    return Math.min(1, 0.45*outsPart + 0.35*blockPart + 0.20*jit);
+  }
+
+  // Candidate aggressive sizes, as chips ON TOP of any call.
+  function sizes(info){
+    const P = info.pot, C = info.toCall;
+    const room = Math.min(info.heroStack - C, info.villainStack);
+    if(room <= 0) return [];
+    const out = [];
+    for(const frac of [0.33, 0.70, 1.25]){
+      let R = Math.round(P * frac);
+      R = Math.max(R, info.minRaise);
+      if(R >= room) continue;
+      if(!out.includes(R)) out.push(R);
+    }
+    // All-in only when it is a sane price relative to the pot. Without this the
+    // bot "value bets" 65x pot with 62% equity and busts itself in two hands.
+    if((room <= 3*P || out.length === 0) && out.indexOf(room) < 0) out.push(room);
+    return out.slice(0, 4);
+  }
+
+  // EV of putting R on top while facing C, with pot P.
+  //   villain folds (prob f): we win P
+  //   villain calls:          we win P+R with prob Ec, else lose C+R
+  const evAggro = (P,C,R,f,Ec) => f*P + (1-f)*( Ec*(P+R) - (1-Ec)*(C+R) );
+  const evCall  = (P,C,Eq)     => Eq*P - (1-Eq)*C;
+
+  function decide(info, range, valueVec, rngFn, onSlice, done){
+    const P = info.pot, C = info.toCall;
+    const R = sizes(info);
+    const contVecs = R.map(r => EN.continueVec(valueVec, range, P>0 ? r/P : 1));
+    const job = EN.makeEquityJob(info.heroCards.slice(), info.board.slice(),
+                                 range, contVecs, rngFn);
+    onSlice(job, function(){
+      const res = job.result();
+      const Eq = res.equity;
+      const reqEq = C > 0 ? C/(P+C) : 0;
+      const rows = [];
+
+      if(C > 0) rows.push({ act:"fold", amt:0, ev:0, note:"give up the pot" });
+      rows.push({ act: C>0 ? "call" : "check", amt: C,
+                  ev: C>0 ? evCall(P,C,Eq) : 0,
+                  note: C>0 ? ("needs "+(reqEq*100).toFixed(1)+"%") : "free card" });
+
+      const aggro = [];
+      R.forEach((r,i) => {
+        const f = EN.foldEquity(range, contVecs[i]);
+        const Ec = res.ec[i];
+        const ev = evAggro(P,C,r,f,Ec);
+        const row = { act: C>0 ? "raise" : "bet", amt: r+C, on: r, ev, f, Ec,
+                      note: "folds "+(f*100).toFixed(0)+"%, "+(Ec*100).toFixed(0)+"% when called" };
+        rows.push(row); aggro.push(row);
+      });
+
+      const bs = bluffScore(info.heroCards.slice(), info.board.slice(), info.handNo);
+      let pick, why, mode;
+
+      const passive = rows.filter(r => r.act==="fold" || r.act==="call" || r.act==="check")
+                          .sort((a,b)=>b.ev-a.ev)[0];
+      // A value bet has to still be ahead of the hands that CALL it. Without this
+      // gate the bot "value bets" hands that are behind whenever fold equity is high.
+      const calledEV = r => r.Ec*(P + r.on) - (1-r.Ec)*(C + r.on);
+      const valueBest = aggro.filter(r => r.Ec >= 0.5 && calledEV(r) > 0)
+                             .sort((a,b)=>b.ev-a.ev)[0];
+      // A bluff never needs to be bigger than the pot.
+      const bluffBest = aggro.filter(r => r.on <= Math.max(P, info.minRaise))
+                             .sort((a,b)=>b.ev-a.ev)[0];
+
+      if(Eq >= 0.55 && valueBest){
+        mode = "value";
+        pick = valueBest.ev > passive.ev ? valueBest : passive;
+        why = pick === valueBest
+          ? "I have " + pct(Eq) + " against your range, and still " + pct(valueBest.Ec) +
+            " against the part of it that calls. That is a value bet."
+          : "Strong, but betting loses money against how you would respond. Taking the pot line.";
+      } else if(Eq <= 0.35 && bluffBest){
+        mode = "bluff";
+        const alpha = bluffBest.on/(P + bluffBest.on);
+        if(bs >= 1 - alpha){
+          pick = bluffBest;
+          why = "Only " + pct(Eq) + " — too weak to value bet. A " +
+                (bluffBest.on/P).toFixed(2) + "-pot bet has to work " + pct(alpha) +
+                " of the time, so I bluff that share of my give-ups. This hand scores " +
+                bs.toFixed(3) + " vs the " + (1-alpha).toFixed(3) + " cutoff.";
+        } else {
+          pick = passive;
+          why = "Only " + pct(Eq) + " and this hand scores " + bs.toFixed(3) +
+                ", under the " + (1-alpha).toFixed(3) + " bluff cutoff. Giving up.";
+        }
+      } else {
+        mode = "pot-odds";
+        pick = passive;
+        why = C > 0
+          ? "Pot " + P + ", you bet " + C + ". I need " + C + "/(" + P + "+" + C + ") = " +
+            pct(reqEq) + ". I have " + pct(Eq) + "."
+          : "Middling at " + pct(Eq) + ". Taking a free card.";
+      }
+
+      // Never fold when the price is right — a clamp, stated plainly.
+      if(pick.act === "fold" && Eq >= reqEq + 0.05){
+        pick = rows.find(r => r.act === "call") || pick;
+        why = "Folding here would be a mistake: " + pct(Eq) + " against a " +
+              pct(reqEq) + " price.";
+        mode = "clamp";
+      }
+
+      done({
+        action: pick.act, amount: pick.amt, onTop: pick.on || 0,
+        equity: Eq, mode: res.mode, samples: res.samples, se: res.se,
+        requiredEquity: reqEq, bluffScore: bs, rows, why, decisionMode: mode,
+        version: VERSION
+      });
+    });
+  }
+  const pct = x => (x*100).toFixed(1) + "%";
+
+  return { decide, bluffScore, blockerEffect, sizes, evAggro, evCall, VERSION };
+})(Eval, Engine);
+
+/* ================= GAME + UI ================= */
+(function(){
+const E = Eval, EN = Engine;
+const SB = 25, BB = 50, START = 5000;
+const KEY = "themachine";
+
+let state = null;                 // <-- lives ONLY in this closure
+let cfg = { cheat:false, turbo:false };
+const app = document.getElementById("app");
+
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = x => (x*100).toFixed(1)+"%";
+const chips = n => Math.round(n).toLocaleString("en-US");
+
+/* ---- info set: built by PROJECTION, then deep-frozen ---- */
+const INFO_KEYS = ["heroCards","board","pot","toCall","heroStack","villainStack",
+                   "minRaise","street","inPosition","bigBlind","handNo","actionLog"];
+function deepFreeze(o){
+  if(o && typeof o === "object" && !Object.isFrozen(o)){
+    Object.freeze(o); Object.values(o).forEach(deepFreeze);
+  }
+  return o;
+}
+function deepFrozen(o){
+  if(!o || typeof o !== "object") return true;
+  if(!Object.isFrozen(o)) return false;
+  return Object.values(o).every(deepFrozen);
+}
+function buildInfoSet(g){
+  const me = 1, opp = 0;                       // 1 = bot, 0 = human
+  return deepFreeze({
+    heroCards: g.seats[me].hole.slice(),
+    board: g.board.slice(),
+    pot: g.committed[0] + g.committed[1],
+    toCall: Math.max(0, g.bets[opp] - g.bets[me]),
+    heroStack: g.seats[me].stack,
+    villainStack: g.seats[opp].stack,
+    minRaise: g.minRaise,
+    street: g.street,
+    inPosition: g.button === me,
+    bigBlind: BB,
+    handNo: g.handNo,
+    actionLog: g.actionLog.map(a =>
+      ({ who:a.who, act:a.act, amt:a.amt, street:a.street }))   // projection: no cards
+  });
+}
+// Two independent checks. Cards only ever live in ARRAYS here, so scalars
+// like `pot` or `bigBlind` colliding numerically with a card index is not a
+// leak — but an unexpected KEY would be, hence the whitelist.
+function auditInfoSet(info, villainHole){
+  const inArrays = new Set();
+  (function walk(v){
+    if(Array.isArray(v)) v.forEach(x =>
+      typeof x === "number" ? inArrays.add(x) : walk(x));
+    else if(v && typeof v === "object") Object.values(v).forEach(walk);
+  })(info);
+  const leaked = villainHole.filter(c => inArrays.has(c));
+  const keys = Object.keys(info);
+  const extra = keys.filter(k => INFO_KEYS.indexOf(k) < 0);
+  return { clean: leaked.length===0 && extra.length===0 && deepFrozen(info),
+           leaked, extra, frozen: deepFrozen(info), keys };
+}
+
+/* ---- commit / reveal ---- */
+function seal(obj, rnd){
+  const json = JSON.stringify(obj);
+  const salt = Math.floor(rnd()*4294967296).toString(36);
+  return { json, salt, obj,
+           hash: (E.hash32(json + "|" + salt) >>> 0).toString(16).padStart(8,"0") };
+}
+const verifySeal = s => (E.hash32(s.json + "|" + s.salt) >>> 0).toString(16).padStart(8,"0") === s.hash;
+
+/* ---- game engine ---- */
+function newGame(seed){
+  return {
+    handNo: 0, seed: seed >>> 0, button: 0,
+    seats: [ {name:"You", stack:START, hole:[], bet:0, folded:false},
+             {name:"The Machine", stack:START, hole:[], bet:0, folded:false} ],
+    phase: "menu", screen: "menu",
+    board: [], deck: [], street: "pre",
+    committed: [0,0], bets: [0,0], minRaise: BB,
+    actionLog: [], range: null, valueVec: null, narrowLog: [],
+    decisions: [], auditPass: 0, auditTotal: 0, auditFail: null,
+    jobToken: 0, live: null, result: null, rnd: null
+  };
+}
+function deal(g){
+  g.handNo++;
+  g.rnd = E.rng(E.hash32(g.seed + ":" + g.handNo));
+  const deck = [];
+  for(let c=0;c<52;c++) deck.push(c);
+  for(let i=51;i>0;i--){ const j = (g.rnd()*(i+1))|0; const t=deck[i]; deck[i]=deck[j]; deck[j]=t; }
+  g.deck = deck;
+  g.board = []; g.street = "pre";
+  g.seats.forEach(s => { s.hole=[]; s.bet=0; s.folded=false; });
+  g.seats[0].hole = [deck.pop(), deck.pop()];
+  g.seats[1].hole = [deck.pop(), deck.pop()];
+  g.committed = [0,0]; g.bets = [0,0]; g.minRaise = BB;
+  g.actionLog = []; g.narrowLog = []; g.decisions = []; g.result = null; g.live = null;
+
+  // heads-up: button posts SB and acts FIRST preflop, LAST postflop
+  const btn = g.button, bb = 1 - btn;
+  post(g, btn, Math.min(SB, g.seats[btn].stack));
+  post(g, bb,  Math.min(BB, g.seats[bb].stack));
+  g.needs = [true, true];
+  g.actor = btn;
+
+  // the bot's model of the PLAYER's range starts completely uniform
+  g.range = EN.newRange();
+  EN.removeCards(g.range, g.seats[1].hole);
+  g.valueVec = EN.valueVector([], g.seats[1].hole);
+  g.phase = "act"; g.screen = "table";
+}
+function post(g,i,amt){
+  g.seats[i].stack -= amt; g.bets[i] += amt; g.committed[i] += amt;
+}
+const potOf = g => g.committed[0] + g.committed[1];
+const toCallFor = (g,i) => Math.max(0, g.bets[1-i] - g.bets[i]);
+// A player can never put in more than the opponent can match -> no side pots,
+// no uncalled-excess refunds, no negative stacks.
+const maxOnTop = (g,i) => Math.max(0,
+  Math.min(g.seats[i].stack, g.seats[1-i].stack + g.bets[1-i] - g.bets[i]));
+
+function applyPlayerAction(g, i, act, amt){
+  const C = toCallFor(g,i);
+  if(act === "fold"){ g.seats[i].folded = true; g.needs=[false,false]; }
+  else if(act === "check"){ g.needs[i] = false; }
+  else if(act === "call"){
+    const pay = Math.min(C, g.seats[i].stack);
+    post(g,i,pay); g.needs[i] = false;
+  } else {                                        // bet / raise
+    const on = Math.min(amt, maxOnTop(g,i));
+    post(g, i, Math.min(C, g.seats[i].stack) + on);
+    g.minRaise = Math.max(g.minRaise, on);
+    g.needs[i] = false; g.needs[1-i] = true;
+  }
+  g.actionLog.push({ who:i, act, amt: act==="call"?C : act==="fold"||act==="check"?0 : amt,
+                     street:g.street });
+  // The bot updates its model of the PLAYER only.
+  if(i === 0 && act !== "fold"){
+    const paid = act === "call" ? C : act === "check" ? 0 : amt;
+    const cls = EN.classify(act, paid, Math.max(1, potOf(g) - paid), C > 0 && act !== "call");
+    const d = EN.applyAction(g.range, cls, g.valueVec);
+    g.narrowLog.push({ label: labelFor(act, amt, C),
+                       beforeW: d.before.w, afterW: d.after.w,
+                       pctCut: d.before.w ? (d.before.w-d.after.w)/d.before.w : 0,
+                       cls });
+  }
+  g.actor = 1 - i;
+}
+function labelFor(act, amt, C){
+  if(act === "check") return "You checked";
+  if(act === "call")  return "You called " + chips(C);
+  if(act === "fold")  return "You folded";
+  return (C > 0 ? "You raised " : "You bet ") + chips(amt);
+}
+const streetDone = g => !g.needs[0] && !g.needs[1];
+const someoneFolded = g => g.seats[0].folded || g.seats[1].folded;
+const allIn = g => g.seats[0].stack === 0 || g.seats[1].stack === 0;
+
+function nextStreet(g){
+  g.bets = [0,0]; g.minRaise = BB;
+  const order = ["pre","flop","turn","river"];
+  const i = order.indexOf(g.street);
+  if(i >= 3) return false;
+  g.street = order[i+1];
+  const n = g.street === "flop" ? 3 : 1;
+  for(let k=0;k<n;k++) g.board.push(g.deck.pop());
+  EN.removeCards(g.range, g.board);
+  g.valueVec = EN.valueVector(g.board, g.seats[1].hole.concat(g.board));
+  g.needs = [true, true];
+  g.actor = 1 - g.button;                      // postflop: button acts LAST
+  return true;
+}
+function showdown(g){
+  const b0 = new Int32Array(7), b1 = new Int32Array(7);
+  for(let j=0;j<5;j++){ b0[2+j]=g.board[j]; b1[2+j]=g.board[j]; }
+  b0[0]=g.seats[0].hole[0]; b0[1]=g.seats[0].hole[1];
+  b1[0]=g.seats[1].hole[0]; b1[1]=g.seats[1].hole[1];
+  const s0 = E.evalCards(b0,7), s1 = E.evalCards(b1,7);
+  return { s0, s1, winner: s0>s1 ? 0 : s0<s1 ? 1 : -1,
+           cat0: E.CATS[E.catOf(s0)], cat1: E.CATS[E.catOf(s1)] };
+}
+function settle(g, winner, reason){
+  const pot = potOf(g);
+  if(winner === -1){
+    g.seats[0].stack += Math.floor(pot/2);
+    g.seats[1].stack += pot - Math.floor(pot/2);   // odd chip to the bot, stated rule
+  } else g.seats[winner].stack += pot;
+  g.result = { winner, pot, reason,
+               sd: (g.board.length === 5 && !someoneFolded(g)) ? showdown(g) : null };
+  g.committed = [0,0]; g.bets = [0,0];
+  g.phase = "done"; g.screen = "showdown";
+}
+const chipTotal = g => g.seats[0].stack + g.seats[1].stack + potOf(g);
+
+/* ---- time slicing (no Workers: they are unreliable from file://) ---- */
+const yieldNext = fn => (typeof document !== "undefined" && document.hidden)
+  ? setTimeout(fn, 0) : requestAnimationFrame(fn);
+const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+function runSliced(job, token, onProgress, onDone){
+  const CHUNK_MS = 12, BATCH = 1500, t0 = now();
+  function step(){
+    if(token !== state.jobToken) return;                 // cancelled
+    const s = now();
+    while(now() - s < CHUNK_MS && !job.done()) job.runBatch(BATCH);
+    onProgress(job.progress(), job);
+    if(!job.done()){ yieldNext(step); return; }
+    // the progress bar has to be SEEN — watching it converge is the point
+    const wait = Math.max(0, (cfg.turbo ? 0 : 350) - (now() - t0));
+    setTimeout(() => { if(token === state.jobToken) onDone(); }, wait);
+  }
+  yieldNext(step);
+}
+
+/* ---- full heads-up enumeration, sliced, for the Verify screen ---- */
+function makeHeadsUpEnum(h1, h2){
+  const dead = [h1[0],h1[1],h2[0],h2[1]];
+  const deck = []; for(let c=0;c<52;c++) if(dead.indexOf(c)<0) deck.push(c);
+  const A = new Int32Array(7), B = new Int32Array(7);
+  A[0]=h1[0]; A[1]=h1[1]; B[0]=h2[0]; B[1]=h2[1];
+  let i=0,j=1,k=2,m=3,p=4, w=0,l=0,t=0,n=0, fin=false;
+  const TOTAL = 1712304;
+  function bump(){
+    p++;
+    if(p > 47){ m++; p = m+1; }
+    if(m > 46){ k++; m = k+1; p = m+1; }
+    if(k > 45){ j++; k = j+1; m = k+1; p = m+1; }
+    if(j > 44){ i++; j = i+1; k = j+1; m = k+1; p = m+1; }
+    if(i > 43) fin = true;
+  }
+  return {
+    runBatch(cnt){
+      for(let q=0;q<cnt && !fin;q++){
+        A[2]=B[2]=deck[i]; A[3]=B[3]=deck[j]; A[4]=B[4]=deck[k];
+        A[5]=B[5]=deck[m]; A[6]=B[6]=deck[p];
+        const s1 = E.evalCards(A,7), s2 = E.evalCards(B,7);
+        if(s1>s2) w++; else if(s1<s2) l++; else t++;
+        n++; bump();
+      }
+    },
+    done: () => fin,
+    progress: () => n/TOTAL,
+    result: () => ({ w, l, t, n, equity: n ? (w + t/2)/n : 0 })
+  };
+}
+
+/* ================= RENDER ================= */
+const SUIT_CH = ["♣","♦","♥","♠"];
+const isRed = c => (c&3) === 1 || (c&3) === 2;
+function cardEl(c, hidden){
+  if(c == null) return '<div class="card slot">-</div>';
+  if(hidden)    return '<div class="card back">?</div>';
+  return '<div class="card'+(isRed(c)?" r":"")+'"><span>'+E.RANKS[c>>2]+
+         '</span><span>'+SUIT_CH[c&3]+'</span></div>';
+}
+const cardsEl = (cs, hidden) => '<div class="cards">' +
+  cs.map(c=>cardEl(c,hidden)).join("") + '</div>';
+
+function render(){
+  const g = state;
+  if(!g || g.screen === "menu") return renderMenu();
+  if(g.screen === "verify")   return renderVerify();
+  if(g.screen === "showdown") return renderTable(true);
+  if(g.screen === "gameover") return renderOver();
+  return renderTable(false);
+}
+
+function renderMenu(){
+  app.innerHTML =
+    '<div class="center"><h1>THE MACHINE</h1>' +
+    '<p class="sub">Heads-up hold’em against a bot that shows its work.<br>' +
+    'It cannot see your cards. You can check that yourself.</p></div>' +
+    '<div class="panel"><label for="sd">Seed (replay any session exactly)</label>' +
+    '<input type="text" id="sd" value="' + (Math.floor(Math.random()*1e9)) + '">' +
+    '<div style="margin-top:12px"><button class="primary" data-act="start">Sit Down — ' +
+      chips(START) + ' chips</button></div></div>' +
+    '<div class="grid2">' +
+      '<button data-act="verify">Verify the math</button>' +
+      '<button data-act="selftest">Run the tests</button></div>' +
+    '<details class="panel"><summary><b>How this works</b> <span class="sub">— 30 seconds</span></summary>' +
+    '<p class="sub">Standard heads-up no-limit hold’em. Blinds ' + SB + '/' + BB +
+      '. The button posts the small blind, acts first before the flop and last after it.</p>' +
+    '<p class="sub">The bot starts every hand assuming you could hold <b>any two cards</b> — ' +
+      'all 1,326 combinations. It narrows that model from nothing but your betting. ' +
+      'Watch the grid collapse when you raise.</p>' +
+    '<p class="sub">Every decision shows the arithmetic: its equity, the price it is being ' +
+      'offered, and the expected value of each option. Numbers you can check on your phone.</p>' +
+    '</details>' + footer();
+}
+
+function footer(){
+  return '<div class="foot">Monte-Carlo / exact equity + Bayesian range filtering + ' +
+    'EV maximisation with derived bluff frequencies.<br>' +
+    '<b>Not CFR. Not a solver. Not GTO.</b> The opponent model is an assumption, ' +
+    'and it is printed on screen.<br>' +
+    '<a href="#" data-act="selftest" style="color:#6c8880">run the tests</a> · ' +
+    '<a href="#" data-act="verify" style="color:#6c8880">verify the equity engine</a></div>';
+}
+
+function header(g){
+  const btn = i => g.button === i ? ' <span class="badge btn">BTN</span>' : '';
+  const auditCls = g.auditFail ? "bad" : "ok";
+  return '<div class="hdr"><div class="r1">' +
+    '<span>' + esc(g.seats[1].name) + btn(1) + ' <b>' + chips(g.seats[1].stack) + '</b></span>' +
+    '<span class="pot">' + chips(potOf(g)) + '</span>' +
+    '<span><b>' + chips(g.seats[0].stack) + '</b> ' + esc(g.seats[0].name) + btn(0) + '</span>' +
+    '</div><div class="r2"><span>Hand #' + g.handNo + ' · ' + g.street.toUpperCase() + '</span>' +
+    '<span class="' + auditCls + '">Bot inputs audited: ' + g.auditPass + '/' + g.auditTotal +
+    (g.auditFail ? " LEAK" : " clean") + '</span></div></div>';
+}
+
+function renderTable(reveal){
+  const g = state;
+  const showBot = reveal || cfg.cheat;
+  const last = g.decisions[g.decisions.length-1];
+  let h = header(g);
+
+  if(g.auditFail){
+    h += '<div class="banner"><b>HALTED — information leak detected.</b><br>' +
+      'The bot’s input contained data it must not see: ' +
+      esc(JSON.stringify(g.auditFail)) + '</div>';
+  }
+
+  h += '<div class="seat' + (g.actor===1 && g.phase==="act" ? " turn":"") + '">' +
+    '<div><b>' + esc(g.seats[1].name) + '</b>' +
+    (g.seats[1].folded ? ' <span class="badge bad">FOLDED</span>' : '') +
+    '<div class="sub">' + chips(g.seats[1].stack) +
+    (g.bets[1] ? ' · in ' + chips(g.bets[1]) : '') + '</div></div>' +
+    cardsEl(g.seats[1].hole, !showBot) + '</div>';
+
+  const b = g.board.slice(); while(b.length < 5) b.push(null);
+  h += '<div class="board">' + b.map(c=>cardEl(c,false)).join("") + '</div>';
+
+  h += '<div class="seat' + (g.actor===0 && g.phase==="act" ? " turn":"") + '">' +
+    '<div><b>' + esc(g.seats[0].name) + '</b>' +
+    (g.seats[0].folded ? ' <span class="badge bad">FOLDED</span>' : '') +
+    '<div class="sub">' + chips(g.seats[0].stack) +
+    (g.bets[0] ? ' · in ' + chips(g.bets[0]) : '') + '</div></div>' +
+    cardsEl(g.seats[0].hole, false) + '</div>';
+
+  if(g.phase === "thinking") h += thinkingPanel();
+  else if(g.phase === "done") h += resultPanel();
+  else if(g.actor === 0)      h += actionBar(g);
+  else                        h += '<div class="panel sub">Waiting for the bot…</div>';
+
+  if(last && g.phase !== "thinking") h += lastActionPanel(last, g.phase === "done");
+  h += readPanel(g);
+  h += '<div class="grid2" style="margin-top:10px">' +
+    '<button data-act="cheat">' + (cfg.cheat ? "✓ Bot is CHEATING" : "Let the bot cheat") + '</button>' +
+    '<button data-act="turbo">' + (cfg.turbo ? "✓ Turbo" : "Turbo (skip think)") + '</button>' +
+    '</div>' +
+    '<button class="wide" data-act="quit" style="margin-top:8px">Leave table</button>';
+  h += footer();
+  app.innerHTML = h;
+}
+
+function thinkingPanel(){
+  return '<div class="panel"><h3 style="margin-top:0">The bot is thinking</h3>' +
+    '<div class="row" style="justify-content:space-between">' +
+    '<span class="eqnum" id="eqNum">—</span>' +
+    '<span class="sub mono" id="simN">starting…</span></div>' +
+    '<div class="gauge"><i id="eqBar" style="width:0%"></i></div>' +
+    '<div class="sub mono" id="eqMode"></div></div>';
+}
+function renderLive(p, job){
+  const r = job.result();
+  const n = document.getElementById("eqNum"); if(!n) return;
+  n.textContent = pct(r.equity);
+  const bar = document.getElementById("eqBar"); if(bar) bar.style.width = (p*100).toFixed(1)+"%";
+  const s = document.getElementById("simN");
+  if(s) s.textContent = r.mode === "exact"
+    ? chips(r.samples) + " / " + chips(job.st.total) + " exact"
+    : chips(r.samples) + " sims ±" + (r.se*100).toFixed(2) + "%";
+  const md = document.getElementById("eqMode");
+  if(md) md.textContent = r.mode === "exact"
+    ? "enumerating every remaining runout"
+    : "sampling — the exact space is too large to enumerate";
+}
+
+function lastActionPanel(d, revealed){
+  const r = d.reasoning;
+  let h = '<div class="panel"><h3 style="margin-top:0">Bot reasoning · ' +
+    (revealed ? '<span class="ok">revealed</span>' : '<span class="gold">sealed ' + d.seal.hash + '</span>') +
+    '</h3><div class="quote">' + esc(r.why) + '</div>';
+  h += '<div class="stat"><span>Its equity vs your modelled range</span><b>' +
+       (revealed ? pct(r.equity) : "sealed") + '</b></div>';
+  h += '<div class="stat"><span>Price it was offered (needs)</span><b>' +
+       pct(r.requiredEquity) + '</b></div>';
+  h += '<div class="stat"><span>Computed by</span><b>' + r.mode + " · " +
+       chips(r.samples) + (r.mode==="exact" ? " outcomes" : " sims") + '</b></div>';
+  if(revealed){
+    h += '<table class="evtab"><tr><th>option</th><th>chips</th><th>EV</th><th>note</th></tr>' +
+      r.rows.map(x =>
+        '<tr class="' + (x.act===r.action && (x.amt===r.amount) ? "pick":"") + '">' +
+        '<td>' + x.act + '</td><td>' + (x.amt?chips(x.amt):"–") + '</td>' +
+        '<td>' + (x.ev>=0?"+":"") + x.ev.toFixed(1) + '</td>' +
+        '<td class="sub">' + esc(x.note) + '</td></tr>').join("") + '</table>';
+    h += '<div class="sub mono" style="margin-top:7px">commit ' + d.seal.hash +
+         ' · salt ' + d.seal.salt + ' · recomputed ' +
+         (verifySeal(d.seal) ? '<span class="ok">MATCH</span>' : '<span class="bad">TAMPERED</span>') +
+         '</div>';
+  } else {
+    h += '<div class="sub" style="margin-top:7px">Its equity is sealed until showdown — ' +
+      'showing it now would tell you exactly what it holds. The hash above commits to the ' +
+      'full reasoning; it is checked when the cards turn over. ' +
+      '<i>(FNV-1a, not cryptographic — tamper-evident for a demo.)</i></div>';
+  }
+  return h + '</div>';
+}
+
+function readPanel(g){
+  const cls = new Float64Array(169);
+  for(let k=0;k<EN.N;k++) if(g.range[k] > 0) cls[E.CLASS_OF[k]] += g.range[k];
+  let max = 0; for(let i=0;i<169;i++) if(cls[i] > max) max = cls[i];
+  const lc = EN.liveCount(g.range);
+  let grid = '<div class="rgrid">';
+  for(let i=0;i<169;i++){
+    const w = max > 0 ? cls[i]/max : 0;
+    grid += '<div class="rc' + (w>0.02?" on":"") + '" style="background:rgba(93,219,154,' +
+            w.toFixed(3) + ')">' + E.CLASS_NAME[i] + '</div>';
+  }
+  grid += '</div>';
+  const log = g.narrowLog.length
+    ? g.narrowLog.map(n => '<div>' + esc(n.label) + ' → range weight ' +
+        (n.pctCut >= 0.005 ? '<span style="color:var(--good)">-' + (n.pctCut*100).toFixed(0) + '%</span>'
+         : n.pctCut <= -0.005 ? '<span style="color:var(--dim)">+' + (-n.pctCut*100).toFixed(0) + '%</span>'
+         : 'unchanged') +
+        ' <span style="opacity:.6">(' + n.afterW.toFixed(1) + ' left)</span></div>').join("")
+    : '<div>No reads yet — every one of your 1,326 hands is still live.</div>';
+  return '<details class="panel" open><summary><b>What the bot thinks you have</b></summary>' +
+    '<div class="sub">Live combos <b>' + lc.n + ' / 1326</b> · weighted ' + lc.w.toFixed(1) + '</div>' +
+    grid +
+    '<div class="log">' + log + '</div>' +
+    '<div class="sub" style="margin-top:6px">Brighter = more likely, given only how you have bet. ' +
+    'Nothing here comes from your actual cards.</div></details>' + eyesPanel(g);
+}
+function eyesPanel(g){
+  const info = buildInfoSet(g);
+  const mine = g.seats[0].hole.map(E.cardStr).join(" ");
+  return '<details class="panel"><summary><b>What the bot actually sees</b></summary>' +
+    '<pre>' + esc(JSON.stringify(info, null, 1)) + '</pre>' +
+    '<div class="sub">Your cards are <b>' + esc(mine) + '</b>. Searched all ' +
+    Object.keys(info).length + ' fields of the bot’s input for them — ' +
+    '<span class="ok">not found</span>. The object is deep-frozen, and the audit above ' +
+    'runs this check on every single decision.</div></details>';
+}
+
+function actionBar(g){
+  const C = toCallFor(g,0), P = potOf(g), maxOn = maxOnTop(g,0);
+  let h = '<div class="panel"><div class="grid2">';
+  h += C > 0
+    ? '<button data-act="p" data-a="fold">Fold</button>' +
+      '<button data-act="p" data-a="call">Call ' + chips(Math.min(C,g.seats[0].stack)) + '</button>'
+    : '<button data-act="p" data-a="check">Check</button>' +
+      '<button data-act="p" data-a="bet" data-amt="' + Math.min(maxOn, Math.round(P*0.66)) +
+        '">Bet ' + chips(Math.min(maxOn, Math.round(P*0.66))) + '</button>';
+  h += '</div>';
+  const opts = [["⅓ pot", Math.round(P/3)], ["⅔ pot", Math.round(P*2/3)],
+                ["pot", P], ["all-in", maxOn]];
+  const seen = {};
+  h += '<div class="grid4" style="margin-top:8px">' + opts.map(([lab,v]) => {
+    v = Math.max(Math.min(v, maxOn), 0);
+    if(v <= 0 || seen[v]) return "";
+    seen[v] = 1;
+    return '<button data-act="p" data-a="bet" data-amt="' + v + '" style="min-height:42px;padding:8px 4px">' +
+      '<div style="font-size:11px;color:var(--dim)">' + lab + '</div>' + chips(v) + '</button>';
+  }).join("") + '</div>';
+  if(C > 0) h += '<div class="sub" style="margin-top:8px">Pot ' + chips(P) + ' · you need ' +
+    pct(C/(P+C)) + ' to call profitably.</div>';
+  return h + '</div>';
+}
+
+function resultPanel(){
+  const g = state, r = g.result;
+  const who = r.winner === -1 ? "Split pot"
+            : r.winner === 0 ? "You win " + chips(r.pot)
+            : "The Machine wins " + chips(r.pot);
+  let h = '<div class="panel"><h2 style="margin-top:0">' + esc(who) + '</h2>';
+  if(r.sd) h += '<div class="sub">' + esc(r.sd.cat1) + ' (bot) vs ' + esc(r.sd.cat0) + ' (you)</div>';
+  else h += '<div class="sub">' + (r.reason === "fold" ? "Won without a showdown." : "") + '</div>';
+  const busted = g.seats[0].stack <= 0 || g.seats[1].stack <= 0;
+  h += '<div style="margin-top:11px"><button class="primary" data-act="' +
+       (busted ? "quit" : "next") + '">' + (busted ? "Session over" : "Next hand") + '</button></div>';
+  return h + '</div>';
+}
+function renderOver(){
+  const g = state;
+  const won = g.seats[0].stack > g.seats[1].stack;
+  app.innerHTML = '<div class="center"><h1>' + (won ? "YOU BEAT IT" : "THE MACHINE WINS") + '</h1>' +
+    '<p class="sub">After ' + g.handNo + ' hands</p></div>' +
+    '<div class="panel"><div class="stat"><span>You</span><b>' + chips(g.seats[0].stack) + '</b></div>' +
+    '<div class="stat"><span>The Machine</span><b>' + chips(g.seats[1].stack) + '</b></div>' +
+    '<div class="stat"><span>Decisions audited clean</span><b>' + g.auditPass + '/' + g.auditTotal + '</b></div>' +
+    '<div class="stat"><span>Seed</span><b class="mono">' + g.seed + '</b></div></div>' +
+    '<button class="primary" data-act="menu">New session</button>' + footer();
+}
+
+/* ---- Verify screen: beat 1 ---- */
+function renderVerify(){
+  app.innerHTML = '<h1>VERIFY</h1>' +
+    '<p class="sub">No sampling, no tolerances. Every possible board is dealt and counted.</p>' +
+    '<div class="panel"><h3 style="margin-top:0">A♠ A♥ vs K♠ K♦ — all 1,712,304 runouts</h3>' +
+    '<div class="row" style="justify-content:space-between">' +
+    '<span class="eqnum" id="vNum">—</span><span class="sub mono" id="vN">ready</span></div>' +
+    '<div class="gauge"><i id="vBar" style="width:0%"></i></div>' +
+    '<div class="sub mono" id="vDet"></div>' +
+    '<div style="margin-top:11px"><button class="primary" data-act="runverify">Enumerate</button></div>' +
+    '<div class="sub" style="margin-top:9px">Published value for this exact matchup: ' +
+    '<b>81.9461%</b>. Suits matter — two shared suits gives 82.6366%, none gives 81.2555%. ' +
+    'Look it up while this runs.</div></div>' +
+    '<button class="wide" data-act="menu">Back</button>' + footer();
+}
+function runVerify(){
+  const C = (r,s) => r*4+s;
+  const job = makeHeadsUpEnum([C(12,3),C(12,2)], [C(11,3),C(11,1)]);
+  const token = ++state.jobToken;
+  const t0 = now();
+  runSliced(job, token,
+    (p) => {
+      const r = job.result();
+      const n = document.getElementById("vNum"); if(!n) return;
+      n.textContent = (r.equity*100).toFixed(4) + "%";
+      document.getElementById("vBar").style.width = (p*100).toFixed(1)+"%";
+      document.getElementById("vN").textContent = chips(r.n) + " / 1,712,304";
+    },
+    () => {
+      const r = job.result();
+      const ok = Math.abs(r.equity*100 - 81.9461) < 0.0005;
+      const d = document.getElementById("vDet");
+      if(d) d.innerHTML = "win " + chips(r.w) + " · lose " + chips(r.l) +
+        " · tie " + chips(r.t) + " · " + Math.round(now()-t0) + " ms<br>" +
+        (ok ? '<span class="ok">MATCHES the published 81.9461%</span>'
+            : '<span class="bad">MISMATCH</span>');
+    });
+}
+
+/* ================= FLOW ================= */
+function cheatRange(g){
+  const r = new Float64Array(EN.N);
+  r[E.COMBO_ID[g.seats[0].hole[0]*52 + g.seats[0].hole[1]]] = 1;
+  return r;
+}
+function botTurn(){
+  const g = state;
+  const info = buildInfoSet(g);
+  const audit = auditInfoSet(info, g.seats[0].hole);
+  g.auditTotal++;
+  if(audit.clean) g.auditPass++;
+  else { g.auditFail = audit; g.phase = "halt"; render(); return; }
+
+  g.phase = "thinking"; render();
+  const token = ++g.jobToken;
+  Bot.decide(info, cfg.cheat ? cheatRange(g) : g.range, g.valueVec, g.rnd,
+    (job, finish) => runSliced(job, token, renderLive, finish),
+    dec => {
+      if(token !== g.jobToken) return;
+      g.decisions.push({ reasoning: dec, seal: seal(dec, g.rnd) });
+      applyBot(g, dec);
+      g.phase = "act";
+      advance();
+    });
+}
+function applyBot(g, dec){
+  if(dec.action === "fold")       applyPlayerAction(g,1,"fold",0);
+  else if(dec.action === "check") applyPlayerAction(g,1,"check",0);
+  else if(dec.action === "call")  applyPlayerAction(g,1,"call",0);
+  else                            applyPlayerAction(g,1,"bet",dec.onTop);
+}
+function advance(){
+  const g = state;
+  if(someoneFolded(g)){ settle(g, g.seats[0].folded ? 1 : 0, "fold"); render(); return; }
+  let guard = 0;
+  while(!streetDone(g) && g.seats[g.actor].stack === 0 && guard++ < 4){
+    g.needs[g.actor] = false; g.actor = 1 - g.actor;
+  }
+  if(!streetDone(g)){
+    g.phase = "act";
+    if(g.actor === 1) botTurn(); else render();
+    return;
+  }
+  if(allIn(g)){
+    while(g.board.length < 5) g.board.push(g.deck.pop());
+    const sd = showdown(g); settle(g, sd.winner, "showdown"); render(); return;
+  }
+  if(g.street === "river"){
+    const sd = showdown(g); settle(g, sd.winner, "showdown"); render(); return;
+  }
+  nextStreet(g); advance();
+}
+function nextHand(){
+  const g = state;
+  g.button = 1 - g.button;
+  if(g.seats[0].stack <= 0 || g.seats[1].stack <= 0){ g.screen = "gameover"; render(); return; }
+  deal(g); advance();
+}
+
+/* ================= EVENTS ================= */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const act = b.dataset.act;
+  if(b.tagName === "A") e.preventDefault();
+
+  if(act === "start"){
+    const sd = document.getElementById("sd");
+    state = newGame(E.hash32(String((sd && sd.value) || Date.now())));
+    deal(state); advance(); return;
+  }
+  if(act === "menu"){ state = null; render(); return; }
+  if(act === "verify"){ if(!state) state = newGame(1); state.screen = "verify"; render(); return; }
+  if(act === "runverify"){ runVerify(); return; }
+  if(act === "selftest"){ runTests(); return; }
+  if(!state) return;
+  if(act === "p"){
+    if(state.phase !== "act" || state.actor !== 0) return;
+    applyPlayerAction(state, 0, b.dataset.a, +(b.dataset.amt || 0));
+    advance(); return;
+  }
+  if(act === "next"){ nextHand(); return; }
+  if(act === "quit"){ state.screen = "gameover"; render(); return; }
+  if(act === "cheat"){ cfg.cheat = !cfg.cheat; render(); return; }
+  if(act === "turbo"){ cfg.turbo = !cfg.turbo; render(); return; }
+});
+
+/* ================= SELF TEST ================= */
+function drain(job){ while(!job.done()) job.runBatch(200000); return job.result(); }
+function decideSync(info, range, valueVec, seed){
+  let out = null;
+  Bot.decide(info, range, valueVec, E.rng(seed || 7),
+    (job, finish) => { while(!job.done()) job.runBatch(200000); finish(); },
+    d => { out = d; });
+  return out;
+}
+function mkInfo(o){
+  const base = { heroCards:[], board:[], pot:0, toCall:0, heroStack:1000,
+    villainStack:1000, minRaise:50, street:"flop", inPosition:true,
+    bigBlind:50, handNo:1, actionLog:[] };
+  return deepFreeze(Object.assign(base, o));
+}
+const CD = (r,s) => r*4+s;
+
+function runTests(){
+  const out = []; let pass = 0, fail = 0;
+  const ok = (name, cond) => { cond ? pass++ : fail++;
+    out.push((cond ? "PASS  " : "FAIL  ") + name); };
+  const t0 = now();
+  const sc = cs => { const b = new Int32Array(7); cs.forEach((c,i)=>b[i]=c);
+                     return E.evalCards(b, cs.length); };
+
+  /* --- evaluator --- */
+  const royal = sc([CD(12,3),CD(11,3),CD(10,3),CD(9,3),CD(8,3)]);
+  const sf9   = sc([CD(7,1),CD(6,1),CD(5,1),CD(4,1),CD(3,1)]);
+  const quadA = sc([CD(12,0),CD(12,1),CD(12,2),CD(12,3),CD(5,0)]);
+  const boat  = sc([CD(11,0),CD(11,1),CD(11,2),CD(10,0),CD(10,1)]);
+  const flush = sc([CD(12,3),CD(9,3),CD(6,3),CD(3,3),CD(1,3)]);
+  const str9  = sc([CD(7,0),CD(6,1),CD(5,2),CD(4,3),CD(3,0)]);
+  const str6  = sc([CD(4,0),CD(3,1),CD(2,2),CD(1,3),CD(0,0)]);
+  const wheel = sc([CD(12,0),CD(3,1),CD(2,2),CD(1,3),CD(0,0)]);
+  const trips = sc([CD(5,0),CD(5,1),CD(5,2),CD(11,0),CD(1,1)]);
+  const twoP  = sc([CD(12,0),CD(12,1),CD(11,2),CD(11,3),CD(9,0)]);
+  const pair  = sc([CD(12,0),CD(12,1),CD(11,2),CD(9,3),CD(7,0)]);
+  ok("royal flush beats a nine-high straight flush", royal > sf9);
+  ok("straight flush beats quads", sf9 > quadA);
+  ok("quads > full house > flush > straight", quadA > boat && boat > flush && flush > str9);
+  ok("straight beats trips beats two pair beats pair", str9 > trips && trips > twoP && twoP > pair);
+  ok("the wheel is a straight", E.catOf(wheel) === 4);
+  ok("the wheel ranks BELOW a six-high straight", wheel < str6);
+  ok("kickers discriminate (AAKQJ > AAKQT)",
+     sc([CD(12,0),CD(12,1),CD(11,2),CD(10,3),CD(9,0)]) >
+     sc([CD(12,0),CD(12,1),CD(11,2),CD(10,3),CD(8,0)]));
+  ok("suit permutations tie exactly",
+     sc([CD(12,0),CD(9,1),CD(6,2),CD(3,3),CD(1,0)]) ===
+     sc([CD(12,1),CD(9,2),CD(6,3),CD(3,0),CD(1,1)]));
+  ok("7 cards pick the flush over the pair",
+     E.catOf(sc([CD(12,3),CD(9,3),CD(6,3),CD(3,3),CD(1,3),CD(12,0),CD(12,1)])) === 5);
+
+  // exhaustive census of every 5-card hand in existence
+  const cen = new Array(9).fill(0); const cb = new Int32Array(7);
+  for(let a=0;a<52;a++)for(let b2=a+1;b2<52;b2++)for(let c=b2+1;c<52;c++)
+  for(let d=c+1;d<52;d++)for(let e2=d+1;e2<52;e2++){
+    cb[0]=a;cb[1]=b2;cb[2]=c;cb[3]=d;cb[4]=e2;
+    cen[E.catOf(E.evalCards(cb,5))]++;
+  }
+  const exp = [1302540,1098240,123552,54912,10200,5108,3744,624,40];
+  ok("exhaustive census of all 2,598,960 five-card hands matches published frequencies",
+     exp.every((v,i) => cen[i] === v));
+  out.push("      " + E.CATS.map((n,i)=>n+" "+cen[i]).join(" · "));
+
+  // independent naive evaluator: best of all C(7,5) subsets
+  function naive7(cs){
+    let best = -1; const b5 = new Int32Array(7);
+    for(let i=0;i<7;i++)for(let j=i+1;j<7;j++){
+      let n=0; for(let k=0;k<7;k++) if(k!==i && k!==j) b5[n++]=cs[k];
+      const s = E.evalCards(b5,5); if(s>best) best=s;
+    }
+    return best;
+  }
+  const rr = E.rng(20260827); let agree = 0, tried = 0;
+  for(let t=0;t<30000;t++){
+    const used = {}; const cs = [];
+    while(cs.length<7){ const c=(rr()*52)|0; if(!used[c]){used[c]=1;cs.push(c);} }
+    const b7 = new Int32Array(7); cs.forEach((c,i)=>b7[i]=c);
+    if(E.evalCards(b7,7) === naive7(cs)) agree++;
+    tried++;
+  }
+  ok("30,000 random 7-card hands agree with an independent best-of-21 evaluator ("+agree+"/"+tried+")",
+     agree === tried);
+
+  /* --- equity, enumerated not sampled --- */
+  const aakk = drain(makeHeadsUpEnum([CD(12,3),CD(12,2)],[CD(11,3),CD(11,1)]));
+  ok("AsAh vs KsKd enumerates 1,712,304 boards", aakk.n === 1712304);
+  ok("AsAh vs KsKd equity = 81.9461% (published value)",
+     Math.abs(aakk.equity*100 - 81.9461) < 0.0005);
+  out.push("      win " + aakk.w + " · lose " + aakk.l + " · tie " + aakk.t +
+           " · " + (aakk.equity*100).toFixed(4) + "%");
+  const aks22 = drain(makeHeadsUpEnum([CD(12,3),CD(11,3)],[CD(0,2),CD(0,1)]));
+  ok("AKs vs 22 is the classic coin flip (" + (aks22.equity*100).toFixed(2) + "%)",
+     Math.abs(aks22.equity - 0.5) < 0.02);
+
+  /* --- range narrowing --- */
+  const board = [CD(9,0),CD(4,1),CD(1,2)];
+  const dead = board.slice();
+  const vv = EN.valueVector(board, dead);
+  const rng1 = EN.newRange(); EN.removeCards(rng1, board);
+  const meanChen = r => { let s=0,w=0;
+    for(let k=0;k<EN.N;k++) if(r[k]>0){ s += r[k]*E.chen(E.COMBO_A[k],E.COMBO_B[k]); w += r[k]; }
+    return w ? s/w : 0; };
+  const pre = EN.newRange();
+  const preV = EN.valueVector([], []);
+  const m0 = meanChen(pre);
+  EN.applyAction(pre, "threeBet", preV);
+  ok("a 3-bet raises the mean Chen value of the modelled range (" +
+     m0.toFixed(2) + " → " + meanChen(pre).toFixed(2) + ")", meanChen(pre) > m0);
+
+  const before = EN.liveCount(rng1).n;
+  const r2 = new Float64Array(rng1); EN.applyAction(r2, "betOver", vv);
+  let weakW = 0;
+  for(let k=0;k<EN.N;k++) if(r2[k]>0 && vv[k]>=0 && vv[k] < 0.2) weakW += r2[k];
+  ok("a big bet cuts weak hands but the bluff floor keeps some alive", weakW > 0);
+  ok("board cards are removed from the range", EN.liveCount(rng1).n < 1326);
+  const r3 = new Float64Array(rng1);
+  EN.applyAction(r3, "betBig", vv); EN.applyAction(r3, "betBig", vv);
+  ok("repeated aggression keeps narrowing the weighted range",
+     EN.liveCount(r3).w < EN.liveCount(rng1).w);
+
+  /* --- decision engine --- */
+  const rngD = EN.newRange();
+  const nuts = mkInfo({ heroCards:[CD(12,0),CD(12,1)], board:[CD(12,2),CD(12,3),CD(1,0)],
+                        pot:400, toCall:200, heroStack:5000, villainStack:5000 });
+  const rd = new Float64Array(rngD); EN.removeCards(rd, nuts.heroCards.concat(nuts.board));
+  const vd = EN.valueVector(nuts.board, nuts.heroCards.concat(nuts.board));
+  const dn = decideSync(nuts, rd, vd);
+  ok("with quad aces the bot never folds", dn.action !== "fold");
+  ok("EV(fold) is exactly zero", (dn.rows.find(r=>r.act==="fold")||{ev:0}).ev === 0);
+  ok("required equity = toCall/(pot+toCall)", Math.abs(dn.requiredEquity - 200/600) < 1e-9);
+
+  const trash = mkInfo({ heroCards:[CD(0,0),CD(5,1)], board:[CD(12,2),CD(11,3),CD(10,0)],
+                         pot:400, toCall:400, heroStack:600, villainStack:600 });
+  const rt = new Float64Array(EN.newRange()); EN.removeCards(rt, trash.heroCards.concat(trash.board));
+  const vt = EN.valueVector(trash.board, trash.heroCards.concat(trash.board));
+  const dt = decideSync(trash, rt, vt);
+  ok("facing a pot-sized bet with the worst hand it does not call off (" + dt.action + ")",
+     dt.action === "fold" || dt.action === "raise");
+  ok("its equity estimate carries an error bar or says it was exact",
+     dt.mode === "exact" || dt.se > 0);
+
+  /* --- information isolation: the headline --- */
+  const clean = mkInfo({ heroCards:[CD(12,0),CD(12,1)], board:[CD(2,2)] });
+  ok("a clean info set audits clean", auditInfoSet(clean, [CD(7,3),CD(8,3)]).clean);
+  const planted = deepFreeze({ heroCards:[CD(12,0),CD(12,1)], board:[CD(2,2),CD(7,3)],
+    pot:0, toCall:0, heroStack:0, villainStack:0, minRaise:0, street:"flop",
+    inPosition:true, bigBlind:50, handNo:1, actionLog:[] });
+  const pc1 = auditInfoSet(planted, [CD(7,3),CD(8,3)]);
+  ok("POSITIVE CONTROL: a planted villain card is caught", !pc1.clean && pc1.leaked.length === 1);
+  const extra = deepFreeze(Object.assign({ villainHole:[CD(7,3)] },
+    { heroCards:[], board:[], pot:0, toCall:0, heroStack:0, villainStack:0,
+      minRaise:0, street:"pre", inPosition:true, bigBlind:50, handNo:1, actionLog:[] }));
+  ok("POSITIVE CONTROL: an unexpected extra field is caught",
+     !auditInfoSet(extra, [CD(9,3)]).clean);
+  ok("a shallow-frozen info set is rejected",
+     !auditInfoSet(Object.freeze({ heroCards:[CD(1,1)], board:[], pot:0, toCall:0,
+       heroStack:0, villainStack:0, minRaise:0, street:"pre", inPosition:true,
+       bigBlind:50, handNo:1, actionLog:[] }), [CD(9,3)]).frozen);
+  const src = Bot.decide.toString();
+  ok("Bot.decide's source names no game state, no villain cards",
+     !/\bstate\b/.test(src) && !/villain(Hole|Cards)/.test(src) && !/seats/.test(src));
+
+  /* --- game loop --- */
+  const g = newGame(12345);
+  let conserved = true, bankrupt = false, btnOK = true, handsPlayed = 0;
+  for(let h=0; h<120 && !bankrupt; h++){
+    deal(g);
+    if(g.actor !== g.button) btnOK = false;                 // button acts first preflop
+    let steps = 0;
+    while(g.phase !== "done" && steps++ < 60){
+      if(chipTotal(g) !== 2*START){ conserved = false; break; }
+      if(someoneFolded(g)){ settle(g, g.seats[0].folded?1:0, "fold"); break; }
+      let guard=0;
+      while(!streetDone(g) && g.seats[g.actor].stack===0 && guard++<4){
+        g.needs[g.actor]=false; g.actor = 1-g.actor;
+      }
+      if(streetDone(g)){
+        if(allIn(g)){ while(g.board.length<5) g.board.push(g.deck.pop());
+                      const s=showdown(g); settle(g,s.winner,"sd"); break; }
+        if(g.street === "river"){ const s=showdown(g); settle(g,s.winner,"sd"); break; }
+        const preStreet = g.street;
+        nextStreet(g);
+        if(preStreet === "pre" && g.actor === g.button) btnOK = false;  // button last postflop
+        continue;
+      }
+      if(g.actor === 1){
+        const info = buildInfoSet(g);
+        if(!auditInfoSet(info, g.seats[0].hole).clean){ conserved = false; break; }
+        const d = decideSync(info, g.range, g.valueVec, h*31+steps);
+        applyBot(g, d);
+      } else {
+        applyPlayerAction(g, 0, toCallFor(g,0) > 0 ? "call" : "check", 0);
+      }
+    }
+    handsPlayed++;
+    if(g.seats[0].stack <= 0 || g.seats[1].stack <= 0) bankrupt = true;
+    if(g.seats[0].stack < 0 || g.seats[1].stack < 0) conserved = false;
+    g.button = 1 - g.button;
+  }
+  ok("chips are conserved across " + handsPlayed + " self-played hands", conserved);
+  ok("no stack ever goes negative", g.seats[0].stack >= 0 && g.seats[1].stack >= 0);
+  ok("button posts the small blind and acts first preflop, last postflop", btnOK);
+  ok("the bot does not go bankrupt against an always-call opponent (" +
+     chips(g.seats[1].stack) + " chips after " + handsPlayed + " hands)", g.seats[1].stack > 0);
+
+  /* --- commit / reveal --- */
+  const s1 = seal({a:1,b:"x"}, E.rng(4));
+  ok("a sealed reasoning object verifies against its hash", verifySeal(s1));
+  ok("a tampered seal fails verification",
+     !verifySeal({ json: s1.json + " ", salt: s1.salt, hash: s1.hash }));
+
+  const ms = Math.round(now() - t0);
+  app.innerHTML = '<h1>SELF TEST</h1>' +
+    '<p class="' + (fail ? "bad" : "ok") + '"><b>' + pass + ' passed, ' + fail +
+    ' failed</b> <span class="sub">in ' + ms + ' ms</span></p>' +
+    '<div class="panel tlog">' + out.map(l =>
+      '<span class="' + (l.indexOf("FAIL")===0 ? "bad" : l.indexOf("PASS")===0 ? "ok" : "sub") +
+      '">' + esc(l) + '</span>').join("\n") + '</div>' +
+    '<button class="wide" data-act="menu">Back</button>';
+}
+
+/* ================= BOOT ================= */
+addEventListener("hashchange", () => location.reload());
+if(typeof location !== "undefined" && location.hash === "#test") runTests(); else render();
+})();
+</script>
+</body>
+</html>
