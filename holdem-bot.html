@@ -369,7 +369,7 @@ const Engine = (function(E){
   // Enumerate exactly when the space is small enough; sample when it isn't.
   // Both paths return E plus Ec[] (equity vs only the part of the range that
   // continues facing each candidate size) from ONE pass.
-  const EXACT_CAP = 450000;
+  const EXACT_CAP = 1200000;
 
   function combosOf(range){
     const idx = [], w = [];
@@ -381,12 +381,17 @@ const Engine = (function(E){
     for(let c=0;c<52;c++) if(dead.indexOf(c) < 0) d.push(c);
     return d;
   }
+  // null means "too many cards left to enumerate" — the caller MUST sample.
+  // Returning a wrong-length completion here would silently deal short boards.
   function completions(deck, need){
     const out = [];
     if(need === 0) return [[]];
     if(need === 1){ for(const c of deck) out.push([c]); return out; }
-    for(let i=0;i<deck.length;i++) for(let j=i+1;j<deck.length;j++) out.push([deck[i],deck[j]]);
-    return out;
+    if(need === 2){
+      for(let i=0;i<deck.length;i++) for(let j=i+1;j<deck.length;j++) out.push([deck[i],deck[j]]);
+      return out;
+    }
+    return null;
   }
 
   function makeEquityJob(hole, board, range, contVecs, seedRng){
@@ -425,7 +430,7 @@ const Engine = (function(E){
     }
 
     const comps = completions(deck, need);
-    const exactTotal = idx.length * comps.length;
+    const exactTotal = comps ? idx.length * comps.length : Infinity;
     if(idx.length === 0){ st.done = true; st.mode = "empty"; st.total = 0; }
     else if(exactTotal <= EXACT_CAP){
       st.mode = "exact"; st.total = exactTotal;
@@ -654,14 +659,29 @@ const Bot = (function(E, EN){
       done({
         action: pick.act, amount: pick.amt, onTop: pick.on || 0,
         equity: Eq, mode: res.mode, samples: res.samples, se: res.se,
-        requiredEquity: reqEq, bluffScore: bs, rows, why, decisionMode: mode,
+        requiredEquity: reqEq, bluffScore: bs, rows, why,
+        whyLive: liveWhy(pick, P, C, reqEq), decisionMode: mode,
         version: VERSION
       });
     });
   }
   const pct = x => (x*100).toFixed(1) + "%";
+  const amt$ = n => Math.round(n).toLocaleString("en-US");
 
-  return { decide, bluffScore, blockerEffect, sizes, evAggro, evCall, VERSION };
+  function liveWhy(pick, P, C, reqEq){
+    if(pick.act === "fold")  return "Folding. The price needed " + pct(reqEq) +
+      " and I could not justify it.";
+    if(pick.act === "check") return "Checking.";
+    if(pick.act === "call")  return "Calling " + amt$(C) + ". The pot was " + amt$(P) +
+      ", so the price needed " + pct(reqEq) + ".";
+    const alpha = pick.on/(P + pick.on);
+    return (pick.act === "raise" ? "Raising to " : "Betting ") + amt$(pick.amt) + " — " +
+      (pick.on/P).toFixed(2) + " pot. A bet that size has to work " + pct(alpha) +
+      " of the time to break even, so that is the share of my range here that is bluffing. " +
+      "Whether this hand is one of them stays sealed until showdown.";
+  }
+
+  return { decide, bluffScore, blockerEffect, sizes, evAggro, evCall, liveWhy, VERSION };
 })(Eval, Engine);
 
 /* ================= GAME + UI ================= */
@@ -1050,7 +1070,7 @@ function lastActionPanel(d, revealed){
   const r = d.reasoning;
   let h = '<div class="panel"><h3 style="margin-top:0">Bot reasoning · ' +
     (revealed ? '<span class="ok">revealed</span>' : '<span class="gold">sealed ' + d.seal.hash + '</span>') +
-    '</h3><div class="quote">' + esc(r.why) + '</div>';
+    '</h3><div class="quote">' + esc(revealed ? r.why : (r.whyLive || "")) + '</div>';
   h += '<div class="stat"><span>Its equity vs your modelled range</span><b>' +
        (revealed ? pct(r.equity) : "sealed") + '</b></div>';
   h += '<div class="stat"><span>Price it was offered (needs)</span><b>' +
@@ -1411,6 +1431,11 @@ function runTests(){
   ok("repeated aggression keeps narrowing the weighted range",
      EN.liveCount(r3).w < EN.liveCount(rng1).w);
 
+  ok("completions() refuses to enumerate a 5-card runout instead of returning short boards",
+     EN.completions(EN.deckMinus([0,1]), 5) === null &&
+     EN.completions(EN.deckMinus([0,1]), 2).every(c => c.length === 2) &&
+     EN.completions(EN.deckMinus([0,1]), 1).every(c => c.length === 1));
+
   /* --- decision engine --- */
   const rngD = EN.newRange();
   const nuts = mkInfo({ heroCards:[CD(12,0),CD(12,1)], board:[CD(12,2),CD(12,3),CD(1,0)],
@@ -1431,6 +1456,12 @@ function runTests(){
      dt.action === "fold" || dt.action === "raise");
   ok("its equity estimate carries an error bar or says it was exact",
      dt.mode === "exact" || dt.se > 0);
+
+  ok("the live explanation never leaks the bot's equity, but the sealed one carries it",
+     dn.whyLive.indexOf((dn.equity*100).toFixed(1)) < 0 &&
+     dn.why.indexOf((dn.equity*100).toFixed(1)) >= 0);
+  ok("the live explanation never names which branch it took",
+     !/value bet|give.?up|too weak/i.test(dn.whyLive));
 
   /* --- information isolation: the headline --- */
   const clean = mkInfo({ heroCards:[CD(12,0),CD(12,1)], board:[CD(2,2)] });
