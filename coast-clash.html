@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coast Clash</title>
+<style>
+:root{
+  --bg:#0d0f14; --panel:#171a22; --panel2:#1f2430; --line:#2c3342;
+  --ink:#eef1f6; --dim:#98a2b6; --east:#6ea8ff; --west:#ffab5c;
+  --good:#5ddb9a; --warn:#ffd166;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%}
+#app{max-width:700px;margin:0 auto;padding:16px 14px 60px}
+h1{font-size:26px;letter-spacing:.14em;margin:8px 0 2px}
+h2{font-size:19px;margin:18px 0 8px}
+h3{font-size:15px;margin:14px 0 6px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.1em}
+p{margin:8px 0}
+.sub{color:var(--dim);font-size:14px}
+.center{text-align:center}
+button{font:inherit;color:var(--ink);background:var(--panel2);
+  border:1px solid var(--line);border-radius:10px;padding:12px 16px;
+  cursor:pointer;min-height:46px}
+button:hover:not(:disabled){border-color:#4a5568}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.primary{background:#2f68d8;border-color:#2f68d8;font-weight:600;width:100%}
+button.primary:hover:not(:disabled){background:#3a76ea}
+button.wide{width:100%}
+input[type=text],textarea,select{font:inherit;color:var(--ink);
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:11px 12px;width:100%;min-height:46px}
+textarea{min-height:110px;resize:vertical}
+label{display:block;margin:12px 0 4px;font-size:14px;color:var(--dim)}
+.panel{background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:14px;margin:12px 0}
+.row{display:flex;gap:10px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.east{color:var(--east)} .west{color:var(--west)}
+.bEast{border-color:var(--east)} .bWest{border-color:var(--west)}
+.tile{width:42px;height:42px;flex:0 0 42px;border-radius:9px;
+  display:grid;place-items:center;font-weight:700;font-size:14px;color:#0d0f14}
+.tEast{background:var(--east)} .tWest{background:var(--west)}
+.card{display:flex;gap:11px;align-items:center;background:var(--panel2);
+  border:1px solid var(--line);border-radius:11px;padding:10px;
+  width:100%;text-align:left;margin:7px 0;min-height:auto}
+.card .nm{font-weight:600}
+.card .mt{font-size:12.5px;color:var(--dim)}
+.card.sel{border-color:var(--good);background:#1b2a24}
+.card.burn{opacity:.4}
+.badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:6px;padding:2px 6px;color:var(--dim)}
+.score{display:flex;justify-content:space-between;align-items:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:10px 14px;margin:10px 0}
+.big{font-size:30px;font-weight:700;line-height:1}
+.stat{display:flex;justify-content:space-between;padding:3px 0;font-size:14px;
+  border-bottom:1px dashed #232a36}
+.stat b{font-variant-numeric:tabular-nums}
+.math{font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dim)}
+.win{border:1px solid var(--good);background:#16241d;border-radius:12px;padding:14px;margin:12px 0}
+.quote{border-left:3px solid var(--line);padding:2px 0 2px 11px;
+  color:var(--dim);font-size:14px;margin:7px 0;white-space:pre-wrap}
+.rubric{font-size:13px;color:var(--dim);margin:6px 0 0}
+.rubric span{display:block;padding:1px 0}
+.pass{min-height:66vh;display:grid;place-content:center;text-align:center;gap:16px}
+.foot{color:#5c6577;font-size:12px;text-align:center;margin-top:34px;line-height:1.6}
+.ok{color:var(--good)} .bad{color:#ff6b6b}
+.tlog{font:13px/1.7 ui-monospace,Menlo,monospace;white-space:pre-wrap}
+@media(max-width:420px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div id="app"></div>
+<script>
+"use strict";
+
+/* ============================================================
+   COAST CLASH — alpha
+   East vs West rap debate game. Single file, no dependencies.
+   Sections: DATA / ENGINE / JUDGE / RECAP / UI / TESTS
+   ============================================================ */
+
+const RATINGS_VERSION = "provisional-v1";
+
+/* ---------- DATA -------------------------------------------
+   r = editorial ratings 40-99. songs[].peak = Billboard Hot 100
+   peak, filled in ONLY where confident; null otherwise.
+   Never invent a chart number — leave it null and set iconic.
+   ----------------------------------------------------------- */
+const A = (id,name,coast,city,r,songs)=>({id,name,coast,city,
+  r:{superstar:r[0],hitmaker:r[1],numbers:r[2],rapAbility:r[3],legacy:r[4]},
+  songs:songs.map((s,i)=>({id:id+"-s"+i,title:s[0],year:s[1],iconic:!!s[2],peak:s[3]===undefined?null:s[3]}))});
+
+const ARTISTS = [
+/* ---- EAST ---- */
+A("jayz","Jay-Z","east","Brooklyn, NY",[95,90,97,95,98],
+  [["Empire State of Mind",2009,true,1],["99 Problems",2004,true],["Big Pimpin'",2000,true]]),
+A("nas","Nas","east","Queensbridge, NY",[78,72,76,97,95],
+  [["Made You Look",2002,true],["One Mic",2001,true]]),
+A("50cent","50 Cent","east","South Jamaica, NY",[92,93,91,78,84],
+  [["In Da Club",2003,true,1],["21 Questions",2003,true,1],["Many Men",2003,true]]),
+A("dmx","DMX","east","Yonkers, NY",[82,84,88,80,86],
+  [["Party Up (Up in Here)",2000,true],["X Gon' Give It to Ya",2003,true]]),
+A("jadakiss","Jadakiss","east","Yonkers, NY",[58,60,55,90,72],
+  [["Why",2004,true],["We Gonna Make It",2001,false]]),
+A("camron","Cam'ron","east","Harlem, NY",[66,72,62,78,76],
+  [["Hey Ma",2002,true,3],["Oh Boy",2002,true]]),
+A("juelz","Juelz Santana","east","Harlem, NY",[55,66,54,68,58],
+  [["There It Go (The Whistle Song)",2005,true],["Dipset Anthem",2003,false]]),
+A("fabolous","Fabolous","east","Brooklyn, NY",[64,76,66,74,62],
+  [["Can't Deny It",2001,false],["Breathe",2004,true]]),
+A("busta","Busta Rhymes","east","Brooklyn, NY",[80,82,74,88,84],
+  [["Touch It",2006,true],["I Know What You Want",2003,true]]),
+A("fatjoe","Fat Joe","east","Bronx, NY",[68,76,68,64,66],
+  [["Lean Back",2004,true,1],["What's Luv?",2002,true]]),
+A("jarule","Ja Rule","east","Hollis, NY",[78,88,84,58,60],
+  [["Always on Time",2001,true,1],["Mesmerize",2003,true]]),
+A("nicki","Nicki Minaj","east","South Jamaica, NY",[96,92,93,84,88],
+  [["Super Bass",2011,true,3],["Anaconda",2014,true,2],["Monster (verse)",2010,true]]),
+A("rocky","A$AP Rocky","east","Harlem, NY",[80,74,72,78,76],
+  [["F**kin' Problems",2012,true,8],["Peso",2011,false]]),
+A("joey","Joey Bada$$","east","Brooklyn, NY",[50,48,46,86,62],
+  [["Devastated",2016,false],["Waves",2012,false]]),
+A("popsmoke","Pop Smoke","east","Canarsie, NY",[76,80,78,70,74],
+  [["Dior",2019,true],["Welcome to the Party",2019,true]]),
+A("cardi","Cardi B","east","Bronx, NY",[94,90,88,72,78],
+  [["Bodak Yellow",2017,true,1],["I Like It",2018,true,1]]),
+A("meek","Meek Mill","east","Philadelphia, PA",[74,76,74,80,72],
+  [["Dreams and Nightmares",2012,true],["Going Bad",2018,true]]),
+A("macmiller","Mac Miller","east","Pittsburgh, PA",[70,64,70,82,80],
+  [["Self Care",2018,true],["Donald Trump",2011,false]]),
+A("uzi","Lil Uzi Vert","east","Philadelphia, PA",[82,84,86,68,74],
+  [["XO Tour Llif3",2017,true,7],["Money Longer",2016,false]]),
+A("pusha","Pusha T","east","Virginia Beach, VA",[62,58,56,92,80],
+  [["Grindin'",2002,true],["Nosetalgia",2013,false]]),
+/* ---- WEST ---- */
+A("snoop","Snoop Dogg","west","Long Beach, CA",[97,88,86,80,94],
+  [["Drop It Like It's Hot",2004,true,1],["Beautiful",2003,true],["Gin and Juice",1994,true]]),
+A("dre","Dr. Dre","west","Compton, CA",[90,82,88,74,99],
+  [["The Next Episode",2000,true],["Forgot About Dre",1999,true]]),
+A("cube","Ice Cube","west","South Central, LA",[88,76,80,86,93],
+  [["It Was a Good Day",1993,true],["You Can Do It",1999,false]]),
+A("xzibit","Xzibit","west","Los Angeles, CA",[70,58,56,76,62],
+  [["X",2000,true],["Paparazzi",1996,false]]),
+A("game","The Game","west","Compton, CA",[72,78,78,78,74],
+  [["Hate It or Love It",2005,true,2],["How We Do",2004,true,4]]),
+A("kendrick","Kendrick Lamar","west","Compton, CA",[92,84,88,99,96],
+  [["HUMBLE.",2017,true,1],["Alright",2015,true],["m.A.A.d city",2012,true]]),
+A("sq","ScHoolboy Q","west","Los Angeles, CA",[58,60,58,84,66],
+  [["Man of the Year",2013,false],["Studio",2014,false]]),
+A("nipsey","Nipsey Hussle","west","Crenshaw, LA",[68,56,54,78,82],
+  [["Racks in the Middle",2019,true],["Last Time That I Checc'd",2018,false]]),
+A("yg","YG","west","Compton, CA",[64,70,64,70,68],
+  [["Big Bank",2018,true],["Who Do You Love?",2014,false]]),
+A("e40","E-40","west","Vallejo, CA",[62,64,60,82,86],
+  [["Tell Me When to Go",2006,true],["Choices (Yup)",2014,true]]),
+A("tooshort","Too $hort","west","Oakland, CA",[58,56,62,70,84],
+  [["Blow the Whistle",2006,true],["The Ghetto",1990,true]]),
+A("macdre","Mac Dre","west","Vallejo, CA",[44,46,40,74,78],
+  [["Feelin' Myself",2004,true],["Get Stupid",2004,false]]),
+A("djquik","DJ Quik","west","Compton, CA",[48,52,48,80,80],
+  [["Tonite",1991,true],["Born and Raised in Compton",1991,false]]),
+A("natedogg","Nate Dogg","west","Long Beach, CA",[64,82,62,58,78],
+  [["Regulate",1994,true,2],["Ain't No Fun",1993,true]]),
+A("tyler","Tyler, the Creator","west","Ladera Heights, CA",[84,70,76,84,86],
+  [["EARFQUAKE",2019,true],["See You Again",2017,true]]),
+A("vince","Vince Staples","west","Long Beach, CA",[52,46,44,84,66],
+  [["Norf Norf",2015,true],["Big Fish",2017,false]]),
+A("roddy","Roddy Ricch","west","Compton, CA",[76,86,84,66,64],
+  [["The Box",2019,true,1],["Ballin'",2019,true]]),
+A("geazy","G-Eazy","west","Oakland, CA",[70,72,74,60,54],
+  [["Me, Myself & I",2015,true,7],["No Limit",2017,true]]),
+A("larryjune","Larry June","west","San Francisco, CA",[46,42,40,78,58],
+  [["Smoothies in 1994",2021,false],["60 Days",2023,false]]),
+A("keem","Baby Keem","west","Carson, CA",[62,60,58,82,62],
+  [["family ties",2021,true],["orange soda",2019,true]]),
+];
+
+const byId = id => ARTISTS.find(a=>a.id===id);
+
+const CATS = [
+  {key:"superstar", name:"SUPERSTAR",
+   q:"Who had greater mainstream fame, recognition and celebrity reach?",
+   kw:["fame","famous","mainstream","celebrity","household","crossover","tv","movie","film","brand","icon","iconic","recognizable","culture","superbowl","commercial","star","known"]},
+  {key:"hitmaker", name:"HITMAKER",
+   q:"Who has the stronger body of widely recognizable hit records?",
+   kw:["hit","hits","single","singles","radio","club","chart","charts","anthem","hook","catchy","banger","record","records","playlist","song","songs"]},
+  {key:"numbers", name:"NUMBERS",
+   q:"Who has the stronger measurable commercial performance?",
+   kw:["sold","sales","platinum","gold","riaa","certified","billboard","streams","streaming","units","million","debut","chart","charted","number","copies"]},
+  {key:"rapAbility", name:"RAP ABILITY",
+   q:"Who is the stronger rapper from a craft perspective?",
+   kw:["bars","lyricism","lyrical","lyrics","flow","rhyme","rhymes","wordplay","technical","storytelling","verse","verses","pen","album","albums","versatile","delivery","cadence","writing"]},
+  {key:"legacy", name:"LEGACY",
+   q:"Who has the greater long-term impact on hip-hop and culture?",
+   kw:["influence","influenced","legacy","impact","pioneer","pioneered","culture","cultural","generation","blueprint","longevity","era","changed","inspired","opened","paved","founded","label"]},
+];
+const catByKey = k => CATS.find(c=>c.key===k);
+const HIT_WEIGHT = {superstar:.08, hitmaker:.08, numbers:.05, legacy:.04, rapAbility:.02, finalBoss:.06};
+
+/* ---------- ENGINE (pure-ish; state in, state out) ---------- */
+
+function newGame(p1,p2,p1Coast){
+  const p2Coast = p1Coast==="east" ? "west" : "east";
+  return {
+    v:1, ratingsVersion:RATINGS_VERSION,
+    screen:"draft", round:0, draftTurn:0,
+    players:[
+      {name:p1||"Player 1", coast:p1Coast, roster:[], used:[], hitUsed:false, score:0},
+      {name:p2||"Player 2", coast:p2Coast, roster:[], used:[], hitUsed:false, score:0}],
+    sel:[blankSel(),blankSel()],
+    rounds:[], resolved:false, finalBoss:false, pickIdx:0, search:"",
+  };
+}
+const blankSel = ()=>({artistId:null, hitSongId:null, argument:"", locked:false});
+
+function canDraft(g,pi,artistId){
+  const a = byId(artistId); if(!a) return false;
+  const p = g.players[pi];
+  if(a.coast !== p.coast) return false;
+  if(p.roster.length >= 5) return false;
+  if(g.players.some(pl=>pl.roster.includes(artistId))) return false;
+  return true;
+}
+function draft(g,pi,artistId){
+  if(!canDraft(g,pi,artistId)) return false;
+  g.players[pi].roster.push(artistId);
+  g.draftTurn++;
+  return true;
+}
+const draftComplete = g => g.players.every(p=>p.roster.length===5);
+const drafterIdx = g => g.draftTurn % 2;
+
+function canPlay(g,pi,artistId){
+  const p = g.players[pi];
+  if(!p.roster.includes(artistId)) return false;
+  if(g.finalBoss) return true;              // burn rules off in Final Boss
+  return !p.used.includes(artistId);
+}
+function lockSelection(g,pi,sel){
+  if(!canPlay(g,pi,sel.artistId)) return false;
+  if(sel.hitSongId){
+    if(g.players[pi].hitUsed) return false;
+    const a = byId(sel.artistId);
+    if(!a.songs.some(s=>s.id===sel.hitSongId)) return false;   // song must be this artist's
+  }
+  g.sel[pi] = {...sel, locked:true};
+  return true;
+}
+const bothLocked = g => g.sel[0].locked && g.sel[1].locked;
+
+function resolveRound(g,j){
+  if(g.resolved) return false;              // never score a round twice
+  g.resolved = true;
+  if(j.winner !== null) g.players[j.winner].score++;
+  [0,1].forEach(i=>{
+    const p = g.players[i];
+    if(!g.finalBoss) p.used.push(g.sel[i].artistId);
+    if(g.sel[i].hitSongId) p.hitUsed = true;
+  });
+  g.rounds.push({
+    n: g.finalBoss ? 6 : g.round+1,
+    category: currentCategory(g),
+    finalBoss: g.finalBoss,
+    picks: g.sel.map(s=>({artistId:s.artistId, hitSongId:s.hitSongId, argument:s.argument})),
+    j
+  });
+  return true;
+}
+function advanceRound(g){
+  g.sel = [blankSel(),blankSel()];
+  g.resolved = false;
+  g.pickIdx = 0;
+  if(g.finalBoss){ g.screen = "recap"; return; }
+  g.round++;
+  if(g.round >= 5){
+    if(needsFinalBoss(g)){ g.finalBoss = true; g.screen = "pass"; }
+    else g.screen = "recap";
+  } else g.screen = "pass";
+}
+const isComplete = g => g.round>=5 && !g.finalBoss;
+const needsFinalBoss = g => g.round>=5 && g.players[0].score===g.players[1].score;
+const currentCategory = g => g.finalBoss ? "finalBoss" : CATS[g.round].key;
+
+/* ---------- JUDGE (deterministic; all arithmetic shown) ------ */
+
+function baseFor(artist,cat){
+  if(cat==="finalBoss") return (artist.r.legacy + artist.r.superstar)/2;
+  return artist.r[cat];
+}
+function argBonus(text,cat,oppArtist){
+  const t = (text||"").trim();
+  if(!t) return {pts:0, hits:[]};
+  const low = t.toLowerCase(), hits = [];
+  let pts = 0;
+  // +2 direct comparison: names the opponent's artist
+  const toks = oppArtist.name.toLowerCase().split(/[^a-z0-9$']+/).filter(w=>w.length>=4);
+  if(low.includes(oppArtist.name.toLowerCase()) || toks.some(w=>low.includes(w))){
+    pts += 2; hits.push("named the opponent (+2)");
+  }
+  // +2 specific evidence: a year, a quantified number, a quoted title, or a real song title
+  const specific =
+    /\b(19|20)\d{2}\b/.test(t) ||
+    /#\s?\d+/.test(t) ||
+    /\d+\s*(million|billion|x|times|platinum|plaques?|weeks?)/i.test(t) ||
+    /["'“‘][^"'”’]{3,}["'”’]/.test(t) ||
+    ARTISTS.some(a=>a.songs.some(s=>s.title.length>4 && low.includes(s.title.toLowerCase())));
+  if(specific){ pts += 2; hits.push("cited something specific (+2)"); }
+  // +1 on-category vocabulary
+  const c = cat==="finalBoss" ? catByKey("legacy") : catByKey(cat);
+  const kwHit = new Set(c.kw.filter(w=>low.includes(w)));
+  if(kwHit.size >= 2){ pts += 1; hits.push("argued the actual category (+1)"); }
+  // +1 real but concise
+  if(t.length >= 40 && t.length <= 400){ pts += 1; hits.push("concise and substantive (+1)"); }
+  return {pts: Math.min(pts,6), hits};
+}
+function songScore(s){
+  let v = 50;
+  if(s.iconic) v += 25;
+  if(s.peak !== null && s.peak <= 10) v += 25;
+  return v;
+}
+function hitBonus(song,cat){
+  if(!song) return 0;
+  return Math.round(songScore(song) * HIT_WEIGHT[cat]);
+}
+function judgeRound(g){
+  const cat = currentCategory(g);
+  const catName = cat==="finalBoss" ? "FINAL BOSS" : catByKey(cat).name;
+  const side = [0,1].map(i=>{
+    const a = byId(g.sel[i].artistId);
+    const song = g.sel[i].hitSongId ? a.songs.find(s=>s.id===g.sel[i].hitSongId) : null;
+    const opp = byId(g.sel[1-i].artistId);
+    const ab = argBonus(g.sel[i].argument, cat, opp);
+    const hb = hitBonus(song, cat);
+    return {artist:a, song, base:baseFor(a,cat), arg:ab.pts, argHits:ab.hits, hit:hb,
+            total: baseFor(a,cat) + ab.pts + hb};
+  });
+  const diff = side[0].total - side[1].total;
+  let winner = null, draw = false;
+  if(Math.abs(diff) <= 1.5){
+    if(g.finalBoss){ // Final Boss never draws — higher legacy takes it
+      winner = side[0].artist.r.legacy >= side[1].artist.r.legacy ? 0 : 1;
+    } else draw = true;
+  } else winner = diff > 0 ? 0 : 1;
+  return {winner, draw, catName, side:side.map(s=>({
+    name:s.artist.name, base:+s.base.toFixed(1), arg:s.arg, hit:s.hit,
+    total:+s.total.toFixed(1), song:s.song?s.song.title:null, argHits:s.argHits
+  })), explanation: explain(g, side, winner, draw, catName)};
+}
+function explain(g,side,winner,draw,catName){
+  if(draw) return "Dead even in " + catName + " — " + side[0].artist.name + " and " +
+    side[1].artist.name + " finish within a point. No score.";
+  const w = side[winner], l = side[1-winner];
+  const coast = g.players[winner].coast === "east" ? "East" : "West";
+  let s = coast + " takes " + catName + " — " + w.artist.name + " (" + w.base.toFixed(0) +
+    ") over " + l.artist.name + " (" + l.base.toFixed(0) + ") on the card";
+  const extras = [];
+  if(w.hit) extras.push("the Hit Card (“" + w.song.title + "”) added +" + w.hit);
+  if(w.arg >= 3) extras.push("the argument earned +" + w.arg);
+  if(l.base > w.base) return coast + " takes " + catName + " — " + l.artist.name +
+    " had the better card, but " + w.artist.name + " wins on " +
+    (extras.join(" and ") || "the margin") + ". Upset.";
+  s += extras.length ? ", and " + extras.join(" and ") + "." : ".";
+  return s;
+}
+
+/* ---------- RECAP -------------------------------------------- */
+
+function recapMarkdown(g){
+  const nm = i => g.players[i].name;
+  const cst = i => g.players[i].coast === "east" ? "East" : "West";
+  const L = [];
+  L.push("# Coast Clash Debate Recap","","## Match","East Coast vs. West Coast","",
+    "## Players", "- " + cst(0) + ": " + nm(0), "- " + cst(1) + ": " + nm(1), "", "## Rosters");
+  [0,1].forEach(i=>{
+    L.push("**" + cst(i) + " — " + nm(i) + "**");
+    g.players[i].roster.forEach(id=>L.push("- " + byId(id).name));
+    L.push("");
+  });
+  L.push("## Round Results");
+  g.rounds.forEach(r=>{
+    const c = r.finalBoss ? "Final Boss" : catByKey(r.category).name;
+    const who = r.j.draw ? "Draw" : nm(r.j.winner) + " (" + cst(r.j.winner) + ")";
+    L.push(r.n + ". **" + c + "** — " + who + " · " +
+      byId(r.picks[0].artistId).name + " vs " + byId(r.picks[1].artistId).name +
+      " — " + r.j.explanation);
+  });
+  L.push("", "## Strongest Arguments");
+  [0,1].forEach(i=>{
+    const best = g.rounds.slice().sort((a,b)=>b.j.side[i].arg - a.j.side[i].arg)[0];
+    const txt = best && best.picks[i].argument ? best.picks[i].argument : "(none given)";
+    L.push("- " + cst(i) + " (" + nm(i) + "): " + txt);
+  });
+  const st = matchStats(g);
+  L.push("", "## Match Notes",
+    "- MVP: " + st.mvp, "- Best Hit Card: " + st.bestHit, "- Closest Round: " + st.closest,
+    "", "## Final Score",
+    cst(0) + " " + g.players[0].score + " — " + cst(1) + " " + g.players[1].score,
+    "", "## Winner", st.winnerLine, "", "## Verdict", st.verdict,
+    "", "---", "_Ratings: " + g.ratingsVersion + " (provisional, editorial). Chart peaks shown only where known._");
+  return L.join("\n");
+}
+function matchStats(g){
+  const nm = i => g.players[i].name;
+  const cst = i => g.players[i].coast === "east" ? "East" : "West";
+  let mvp = "—", mvpMargin = -1, bestHit = "—", bestHitVal = 0,
+      closest = "—", closestGap = Infinity;
+  g.rounds.forEach(r=>{
+    const gap = Math.abs(r.j.side[0].total - r.j.side[1].total);
+    if(gap < closestGap){ closestGap = gap;
+      closest = byId(r.picks[0].artistId).name + " vs " + byId(r.picks[1].artistId).name +
+        " (" + gap.toFixed(1) + " apart)"; }
+    r.j.side.forEach(s=>{                                  // any hit card, won round or not
+      if(s.hit > bestHitVal){ bestHitVal = s.hit;
+        bestHit = "“" + s.song + "” +" + s.hit + " for " + s.name; }
+    });
+    if(r.j.winner === null) return;
+    const w = r.j.side[r.j.winner];
+    if(gap > mvpMargin){ mvpMargin = gap; mvp = w.name + " (won by " + gap.toFixed(1) + ")"; }
+  });
+  const s0 = g.players[0].score, s1 = g.players[1].score;
+  const wi = s0===s1 ? null : (s0>s1 ? 0 : 1);
+  const winnerLine = wi===null ? "Draw" : nm(wi) + " — " + cst(wi) + " Coast";
+  const verdict = wi===null
+    ? "The match ended level. Nobody gets bragging rights."
+    : cst(wi) + " wins " + Math.max(s0,s1) + "–" + Math.min(s0,s1) + ". " +
+      "The difference was " + mvp.split(" (")[0] + " and how the roster was spent across the five categories.";
+  return {mvp, bestHit, closest, winnerLine, verdict};
+}
+
+/* ---------- PERSISTENCE -------------------------------------- */
+const KEY = "coastclash";
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function load(){ try{ const s = localStorage.getItem(KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function wipe(){ try{ localStorage.removeItem(KEY); }catch(e){} }
+
+/* ---------- UI ----------------------------------------------- */
+
+let state = null;
+let setupTmp = {p1:"Brey", p2:"Jake", coast:"east"};
+const app = document.getElementById("app");
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const initials = n => n.replace(/[^A-Za-z0-9$ ]/g,"").split(/\s+/).slice(0,2)
+  .map(w=>w[0]||"").join("").toUpperCase() || "??";
+const cc = c => c==="east" ? "East" : "West";
+const tileFor = a => '<div class="tile ' + (a.coast==="east"?"tEast":"tWest") + '">' + esc(initials(a.name)) + '</div>';
+
+function artistCard(a, opts){
+  opts = opts||{};
+  const top = Object.entries(a.r).sort((x,y)=>y[1]-x[1]).slice(0,2)
+    .map(([k])=>catByKey(k).name).join(" / ");
+  const cls = "card" + (opts.sel?" sel":"") + (opts.burn?" burn":"");
+  const act = opts.act ? ' data-act="'+opts.act+'" data-id="'+a.id+'"' : "";
+  const tag = opts.tag ? '<span class="badge">'+esc(opts.tag)+'</span>' : "";
+  const rt = opts.cat ? '<div class="big" style="font-size:22px;color:var(--warn)">' +
+    Math.round(baseFor(a,opts.cat)) + '</div>' : "";
+  return '<button class="'+cls+'"'+act+(opts.dis?" disabled":"")+'>'+tileFor(a)+
+    '<div style="flex:1"><div class="nm">'+esc(a.name)+' '+tag+'</div>'+
+    '<div class="mt">'+esc(a.city)+' &middot; '+esc(top)+'</div></div>'+rt+'</button>';
+}
+function statLine(label,val){ return '<div class="stat"><span>'+esc(label)+'</span><b>'+esc(val)+'</b></div>'; }
+function ratingBlock(a,highlight){
+  return Object.entries(a.r).map(([k,v])=>{
+    const on = k===highlight;
+    return '<div class="stat"'+(on?' style="color:var(--warn)"':'')+'><span>'+catByKey(k).name+
+      '</span><b>'+v+'</b></div>';
+  }).join("");
+}
+const footer = '<div class="foot">Coast Clash alpha &middot; ratings are <b>provisional</b> and editorial, not measured.<br>' +
+  'Chart peaks appear only where known; no sales figures are estimated.</div>';
+
+function render(){
+  if(!state){ return renderSetup(); }
+  const s = state.screen;
+  if(s==="draft") return renderDraft();
+  if(s==="roster") return renderRoster();
+  if(s==="pass") return renderPass();
+  if(s==="pick") return renderPick();
+  if(s==="reveal") return renderReveal();
+  if(s==="result") return renderResult();
+  if(s==="recap") return renderRecap();
+  return renderSetup();
+}
+
+function renderSetup(){
+  const saved = load();
+  const resume = saved && saved.screen !== "recap"
+    ? '<div class="panel"><b>Match in progress</b><div class="sub">' +
+      esc(saved.players[0].name) + " vs " + esc(saved.players[1].name) +
+      " &middot; round " + Math.min(saved.round+1,5) + '</div>' +
+      '<div class="row" style="margin-top:10px"><button data-act="resume" style="flex:1">Resume</button>' +
+      '<button data-act="discard" style="flex:1">New Match</button></div></div>'
+    : "";
+  app.innerHTML =
+    '<div class="center"><h1>COAST CLASH</h1>' +
+    '<p class="sub">East vs West &middot; 2000&ndash;present &middot; 5 artists, 5 rounds</p></div>' +
+    resume +
+    '<div class="panel">' +
+    '<label for="p1">Player 1</label><input type="text" id="p1" value="'+esc(setupTmp.p1)+'">' +
+    '<label for="p2">Player 2</label><input type="text" id="p2" value="'+esc(setupTmp.p2)+'">' +
+    '<label>Player 1 takes which coast?</label>' +
+    '<div class="grid2">' +
+    '<button data-act="coast" data-c="east" class="'+(setupTmp.coast==="east"?"bEast":"")+'">' +
+      '<span class="east">EAST</span></button>' +
+    '<button data-act="coast" data-c="west" class="'+(setupTmp.coast==="west"?"bWest":"")+'">' +
+      '<span class="west">WEST</span></button>' +
+    '</div>' +
+    '<p class="sub" style="margin-top:10px">Player 2 gets the other coast. ' +
+      'Each artist can be played in only one round — spend them wisely.</p>' +
+    '<div style="margin-top:12px"><button class="primary" data-act="start">Start Match</button></div>' +
+    '</div>' + footer;
+}
+
+function renderDraft(){
+  const pi = drafterIdx(state), p = state.players[pi];
+  const taken = new Set([].concat(state.players[0].roster, state.players[1].roster));
+  const q = (state.search||"").toLowerCase();
+  const pool = ARTISTS.filter(a=>a.coast===p.coast && !taken.has(a.id) &&
+    (!q || a.name.toLowerCase().includes(q) || a.city.toLowerCase().includes(q)));
+  app.innerHTML =
+    '<h1>DRAFT</h1>' +
+    '<div class="score"><div><b class="'+p.coast+'">'+esc(p.name)+'</b> is picking' +
+      '<div class="sub">'+cc(p.coast)+' Coast &middot; pick ' + (p.roster.length+1) + ' of 5</div></div>' +
+      '<div class="big">'+p.roster.length+'/5</div></div>' +
+    '<input type="text" id="q" placeholder="Search artist or city" value="'+esc(state.search||"")+'">' +
+    '<h3>Available &mdash; ' + cc(p.coast) + '</h3>' +
+    (pool.length ? pool.map(a=>artistCard(a,{act:"pick"})).join("") : '<p class="sub">No match.</p>') +
+    '<div class="grid2" style="margin-top:14px">' +
+      rosterCol(0) + rosterCol(1) + '</div>' + footer;
+  const q2 = document.getElementById("q");
+  q2.oninput = e => { state.search = e.target.value; render(); document.getElementById("q").focus(); };
+}
+function rosterCol(i){
+  const p = state.players[i];
+  return '<div class="panel" style="margin:0"><h3 style="margin-top:0" class="'+p.coast+'">' +
+    esc(p.name) + ' &middot; ' + cc(p.coast) + '</h3>' +
+    (p.roster.length ? p.roster.map(id=>'<div class="sub">&bull; '+esc(byId(id).name)+'</div>').join("")
+                     : '<div class="sub">empty</div>') + '</div>';
+}
+
+function renderRoster(){
+  app.innerHTML = '<h1>ROSTERS LOCKED</h1>' +
+    '<p class="sub">Five artists. Five rounds. Each artist plays once.</p>' +
+    [0,1].map(i=>{
+      const p = state.players[i];
+      return '<div class="panel"><h3 class="'+p.coast+'" style="margin-top:0">' + esc(p.name) +
+        ' &middot; ' + cc(p.coast) + ' Coast</h3>' +
+        p.roster.map((id,k)=>artistCard(byId(id),{tag:["FRANCHISE","ALL-STAR","ALL-STAR","WILDCARD","WILDCARD"][k]})).join("") +
+        '</div>';
+    }).join("") +
+    '<h3>The five rounds</h3><div class="panel">' +
+    CATS.map((c,i)=>statLine("Round "+(i+1), c.name)).join("") + '</div>' +
+    '<button class="primary" data-act="begin">Begin Round 1</button>' +
+    '<button class="wide" data-act="redraft" style="margin-top:8px">Back to Draft</button>' + footer;
+}
+
+function renderPass(){
+  const i = state.pickIdx, p = state.players[i];
+  const cat = state.finalBoss ? "FINAL BOSS" : CATS[state.round].name;
+  app.innerHTML = '<div class="pass"><div class="sub">' +
+    (state.finalBoss ? "TIEBREAKER" : "ROUND " + (state.round+1)) + ' &middot; ' + cat + '</div>' +
+    '<h1 style="font-size:30px">PASS TO<br>' + esc(p.name.toUpperCase()) + '</h1>' +
+    '<p class="sub">Other player: look away.</p>' +
+    '<button class="primary" data-act="gopick">I\'m ' + esc(p.name) + '</button></div>';
+}
+
+function renderPick(){
+  const i = state.pickIdx, p = state.players[i], sel = state.sel[i];
+  const cat = currentCategory(state);
+  const c = state.finalBoss ? null : catByKey(cat);
+  const chosen = sel.artistId ? byId(sel.artistId) : null;
+  const opts = chosen && !p.hitUsed
+    ? '<label for="hs">Hit Card (one per match)</label><select id="hs">' +
+      '<option value="">— save it —</option>' +
+      chosen.songs.map(s=>'<option value="'+s.id+'"'+(sel.hitSongId===s.id?" selected":"")+'>' +
+        esc(s.title) + (s.year?" ("+s.year+")":"") +
+        (s.peak!==null?" · Hot 100 #"+s.peak:"") + '</option>').join("") + '</select>' +
+      '<p class="sub">Worth up to +' + Math.round(100*HIT_WEIGHT[cat]) + ' in this category.</p>'
+    : (p.hitUsed ? '<p class="sub" style="margin-top:12px">Hit Card already spent.</p>' : "");
+  app.innerHTML =
+    '<div class="sub">' + (state.finalBoss?"TIEBREAKER":"ROUND "+(state.round+1)) + '</div>' +
+    '<h1>' + (state.finalBoss ? "FINAL BOSS" : c.name) + '</h1>' +
+    '<p class="sub">' + (state.finalBoss
+      ? "One artist and one song to represent your whole coast. Burned artists are back in play."
+      : esc(c.q)) + '</p>' +
+    '<div class="score"><div><b class="'+p.coast+'">'+esc(p.name)+'</b>' +
+      '<div class="sub">'+cc(p.coast)+' Coast</div></div>' +
+      '<div class="sub">Score '+state.players[0].score+'–'+state.players[1].score+'</div></div>' +
+    '<h3>Your artists &mdash; ' + (state.finalBoss?"legacy + fame":c.name.toLowerCase()) + ' rating</h3>' +
+    p.roster.map(id=>{
+      const burned = !state.finalBoss && p.used.includes(id);
+      return artistCard(byId(id),{act: burned?null:"choose", sel: sel.artistId===id,
+        burn: burned, dis: burned, tag: burned?"BURNED":null, cat: cat});
+    }).join("") +
+    (chosen ? '<div class="panel"><h3 style="margin-top:0">'+esc(chosen.name)+'</h3>' +
+      ratingBlock(chosen, state.finalBoss?null:cat) + opts + '</div>' : "") +
+    '<label for="arg">Your argument (optional, 400 chars)</label>' +
+    '<textarea id="arg" maxlength="400" placeholder="Make the case for this artist in this category.">' +
+      esc(sel.argument) + '</textarea>' +
+    '<div class="rubric"><b>How the argument scores (max +6):</b>' +
+      '<span>+2 name the opposing artist directly</span>' +
+      '<span>+2 cite something specific — a year, a number, a "song title"</span>' +
+      '<span>+1 use the language of this category</span>' +
+      '<span>+1 keep it between 40 and 400 characters</span>' +
+      '<span style="margin-top:4px">It scores the <i>form</i> of your case, not whether it is true.</span></div>' +
+    '<div style="margin-top:14px"><button class="primary" data-act="lock"' +
+      (chosen?"":" disabled") + '>' + (chosen?"Lock "+esc(chosen.name):"Pick an artist") + '</button></div>' +
+    footer;
+  const ta = document.getElementById("arg");
+  ta.oninput = e => { state.sel[i].argument = e.target.value; };
+  const hs = document.getElementById("hs");
+  if(hs) hs.onchange = e => { state.sel[i].hitSongId = e.target.value || null; render(); };
+}
+
+function renderReveal(){
+  const cat = currentCategory(state);
+  const name = state.finalBoss ? "FINAL BOSS" : catByKey(cat).name;
+  app.innerHTML = '<div class="sub">' + (state.finalBoss?"TIEBREAKER":"ROUND "+(state.round+1)) + '</div>' +
+    '<h1>' + name + '</h1>' +
+    [0,1].map(i=>{
+      const a = byId(state.sel[i].artistId), p = state.players[i];
+      const song = state.sel[i].hitSongId ? a.songs.find(s=>s.id===state.sel[i].hitSongId) : null;
+      return '<div class="panel"><div class="row"><div>'+tileFor(a)+'</div>' +
+        '<div><div class="nm"><b>'+esc(a.name)+'</b></div>' +
+        '<div class="sub">'+esc(p.name)+' &middot; '+cc(p.coast)+'</div></div></div>' +
+        (song ? '<p style="margin:10px 0 0"><span class="badge" style="border-color:var(--warn);color:var(--warn)">HIT CARD</span> “' +
+          esc(song.title) + '”</p>' : "") +
+        (state.sel[i].argument ? '<div class="quote">'+esc(state.sel[i].argument)+'</div>'
+                               : '<div class="quote">(no argument given)</div>') +
+        '</div>';
+    }).join('<div class="center sub" style="margin:-4px 0 -4px">vs</div>') +
+    '<button class="primary" data-act="judge">Judge Round</button>' + footer;
+}
+
+function renderResult(){
+  const r = state.rounds[state.rounds.length-1], j = r.j;
+  const head = j.draw ? "DRAW" :
+    (state.players[j.winner].coast==="east" ? "EAST" : "WEST") + " TAKES IT";
+  app.innerHTML = '<div class="sub">' + (r.finalBoss?"TIEBREAKER":"ROUND "+r.n) + ' &middot; ' + j.catName + '</div>' +
+    '<div class="win"><h2 style="margin:0 0 6px">' + head + '</h2><p style="margin:0">' + esc(j.explanation) + '</p></div>' +
+    [0,1].map(i=>{
+      const s = j.side[i], p = state.players[i];
+      return '<div class="panel"><b class="'+p.coast+'">'+esc(s.name)+'</b> <span class="sub">('+esc(p.name)+')</span>' +
+        statLine("Card rating", s.base) +
+        statLine("Argument", "+" + s.arg) +
+        statLine("Hit Card" + (s.song?" — “"+s.song+"”":""), "+" + s.hit) +
+        '<div class="stat" style="border:0;padding-top:7px"><span><b>Total</b></span><b>'+s.total+'</b></div>' +
+        (s.argHits.length ? '<div class="math">'+s.argHits.map(esc).join(" &middot; ")+'</div>' :
+          '<div class="math">argument scored 0</div>') +
+        '</div>';
+    }).join("") +
+    (r.finalBoss ? "" : '<p class="sub">Burned: ' + esc(byId(r.picks[0].artistId).name) + ' and ' +
+      esc(byId(r.picks[1].artistId).name) + ' cannot be used again.</p>') +
+    '<div class="score"><div>'+esc(state.players[0].name)+' <b class="'+state.players[0].coast+'">'+state.players[0].score+'</b></div>' +
+      '<div class="sub">SCORE</div>' +
+      '<div><b class="'+state.players[1].coast+'">'+state.players[1].score+'</b> '+esc(state.players[1].name)+'</div></div>' +
+    '<button class="primary" data-act="next">' +
+      (state.finalBoss ? "Final Result" : (state.round>=4 ? (needsFinalBoss(state)?"Final Boss":"Final Result") : "Next Round")) +
+      '</button>' + footer;
+}
+
+function renderRecap(){
+  const st = matchStats(state), md = recapMarkdown(state);
+  const s0 = state.players[0].score, s1 = state.players[1].score;
+  app.innerHTML = '<div class="center"><h1>' + esc(st.winnerLine.toUpperCase()) + '</h1>' +
+    '<div class="big" style="margin:10px 0">' + cc(state.players[0].coast) + ' ' + s0 +
+    ' — ' + cc(state.players[1].coast) + ' ' + s1 + '</div></div>' +
+    '<div class="panel">' + statLine("MVP", st.mvp) + statLine("Best Hit Card", st.bestHit) +
+      statLine("Closest Round", st.closest) + '</div>' +
+    '<h3>Round by round</h3><div class="panel">' +
+    state.rounds.map(r=>'<p style="margin:6px 0"><b>' +
+      (r.finalBoss?"Final Boss":catByKey(r.category).name) + '</b><br><span class="sub">' +
+      esc(r.j.explanation) + '</span></p>').join("") + '</div>' +
+    '<h3>Markdown recap</h3>' +
+    '<textarea id="md" style="min-height:220px">' + esc(md) + '</textarea>' +
+    '<div class="row" style="margin-top:10px">' +
+    '<button data-act="copy" style="flex:1">Copy Markdown</button>' +
+    '<button data-act="rematch" style="flex:1">Rematch</button></div>' +
+    '<button class="wide" data-act="newmatch" style="margin-top:8px">New Match</button>' + footer;
+}
+
+/* ---------- EVENTS ------------------------------------------- */
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const act = b.dataset.act;
+
+  if(act==="coast"){ setupTmp.coast = b.dataset.c; render(); return; }
+  if(act==="resume"){ state = load(); render(); return; }
+  if(act==="discard"){ wipe(); render(); return; }
+  if(act==="start"){
+    setupTmp.p1 = document.getElementById("p1").value.trim() || "Player 1";
+    setupTmp.p2 = document.getElementById("p2").value.trim() || "Player 2";
+    state = newGame(setupTmp.p1, setupTmp.p2, setupTmp.coast);
+    save(); render(); return;
+  }
+  if(act==="pick"){
+    const pi = drafterIdx(state);
+    if(draft(state, pi, b.dataset.id)){
+      state.search = "";
+      if(draftComplete(state)) state.screen = "roster";
+      save(); render();
+    }
+    return;
+  }
+  if(act==="redraft"){
+    state.players.forEach(p=>p.roster=[]); state.draftTurn=0; state.screen="draft";
+    save(); render(); return;
+  }
+  if(act==="begin"){ state.screen="pass"; state.pickIdx=0; save(); render(); return; }
+  if(act==="gopick"){ state.screen="pick"; render(); return; }
+  if(act==="choose"){ state.sel[state.pickIdx].artistId = b.dataset.id;
+    state.sel[state.pickIdx].hitSongId = null; render(); return; }
+  if(act==="lock"){
+    const i = state.pickIdx, sel = state.sel[i];
+    if(!lockSelection(state, i, sel)) return;
+    if(i===0){ state.pickIdx = 1; state.screen = "pass"; }
+    else state.screen = "reveal";
+    save(); render(); return;
+  }
+  if(act==="judge"){
+    if(!bothLocked(state)) return;
+    resolveRound(state, judgeRound(state));
+    state.screen = "result"; save(); render(); return;
+  }
+  if(act==="next"){ advanceRound(state); save(); render(); return; }
+  if(act==="copy"){
+    const ta = document.getElementById("md");
+    ta.select(); ta.setSelectionRange(0, 99999);
+    let ok = false;
+    try{ ok = document.execCommand("copy"); }catch(err){}
+    if(navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(()=>{});
+    b.textContent = ok || navigator.clipboard ? "Copied" : "Select + copy";
+    setTimeout(()=>{ b.textContent = "Copy Markdown"; }, 1600);
+    return;
+  }
+  if(act==="rematch"){
+    const p1 = state.players[0];
+    state = newGame(state.players[0].name, state.players[1].name, p1.coast);
+    save(); render(); return;
+  }
+  if(act==="newmatch"){ wipe(); state = null; render(); return; }
+});
+
+/* ---------- SELF TEST (open with #test) ---------------------- */
+
+function runTests(){
+  const out = [];
+  let pass = 0, fail = 0;
+  const ok = (name, cond) => { cond ? pass++ : fail++;
+    out.push((cond?"PASS  ":"FAIL  ") + name); };
+
+  // helper: a game with both rosters filled
+  function seeded(){
+    const g = newGame("A","B","east");
+    ["jayz","nas","50cent","dmx","jarule"].forEach(id=>draft(g,0,id));
+    ["snoop","kendrick","dre","natedogg","larryjune"].forEach(id=>draft(g,1,id));
+    return g;
+  }
+  function play(g,a0,a1,arg0,arg1,hit0){
+    g.sel[0] = {artistId:a0, hitSongId:hit0||null, argument:arg0||"", locked:false};
+    g.sel[1] = {artistId:a1, hitSongId:null, argument:arg1||"", locked:false};
+    lockSelection(g,0,g.sel[0]); lockSelection(g,1,g.sel[1]);
+    const j = judgeRound(g); resolveRound(g,j); return j;
+  }
+
+  const g1 = newGame("A","B","east");
+  ok("cannot draft the opposite coast", !canDraft(g1,0,"snoop"));
+  draft(g1,0,"jayz");
+  ok("cannot draft an artist already on a roster", !canDraft(g1,0,"jayz"));
+  ["nas","50cent","dmx","jarule"].forEach(id=>draft(g1,0,id));
+  ok("cannot draft a 6th artist", !canDraft(g1,0,"camron"));
+  ok("draft alternates between players", drafterIdx(g1)===1);
+
+  const g2 = seeded();
+  g2.players[0].used.push("jayz");
+  ok("cannot play a burned artist", !canPlay(g2,0,"jayz"));
+  ok("can play a burned artist in Final Boss", (g2.finalBoss=true, canPlay(g2,0,"jayz")));
+  g2.finalBoss = false;
+
+  const g3 = seeded();
+  g3.sel[0] = {artistId:"jayz", hitSongId:null, argument:"", locked:false};
+  lockSelection(g3,0,g3.sel[0]);
+  ok("judge blocked until both players lock", !bothLocked(g3));
+
+  const g4 = seeded();
+  const j4 = play(g4,"50cent","larryjune");           // 92 vs 46 on superstar
+  ok("clear favourite wins the round", j4.winner===0);
+  ok("winner receives exactly one point", g4.players[0].score===1 && g4.players[1].score===0);
+  resolveRound(g4, j4);
+  ok("resolveRound cannot score the same round twice", g4.players[0].score===1);
+  ok("both artists are burned after the round",
+     g4.players[0].used.includes("50cent") && g4.players[1].used.includes("larryjune"));
+
+  const g5 = seeded();
+  const j5 = play(g5,"jayz","kendrick");              // superstar 95 vs 92 -> 3 apart, no draw
+  const g5b = seeded();
+  g5b.round = 3;                                      // rapAbility: nas 97 vs dre 74
+  const j5b = play(g5b,"nas","dre");
+  ok("category changes who is favoured", j5.winner===0 && j5b.winner===0);
+
+  // equal cards draw; a real gap does not
+  const gDraw = seeded();
+  gDraw.round = 1;                                    // hitmaker: Ja Rule 88 vs Snoop 88
+  gDraw.sel[0] = {artistId:"jarule", hitSongId:null, argument:"", locked:true};
+  gDraw.sel[1] = {artistId:"snoop",  hitSongId:null, argument:"", locked:true};
+  const jD = judgeRound(gDraw);
+  ok("equal cards produce a draw", jD.draw===true && jD.winner===null);
+  resolveRound(gDraw, jD);
+  ok("a draw awards no points", gDraw.players[0].score===0 && gDraw.players[1].score===0);
+
+  // the hit card is what flips a losing matchup
+  function hitFlip(useHit){
+    const g = seeded(); g.round = 1;                  // hitmaker: DMX 84 vs Nate Dogg 82
+    const nd = byId("natedogg");
+    g.sel[0] = {artistId:"dmx", hitSongId:null, argument:"", locked:true};
+    g.sel[1] = {artistId:"natedogg", hitSongId: useHit ? nd.songs[0].id : null, argument:"", locked:true};
+    return judgeRound(g);
+  }
+  ok("without a hit card the better card wins", hitFlip(false).winner===0);
+  ok("a hit card can flip a losing matchup", hitFlip(true).winner===1);
+  ok("a spent hit card cannot be reused", (function(){
+    const g = seeded(); g.players[0].hitUsed = true;
+    return !lockSelection(g,0,{artistId:"jayz", hitSongId:byId("jayz").songs[0].id, argument:"", locked:false});
+  })());
+  ok("a hit card must belong to the played artist", !lockSelection(seeded(),0,
+    {artistId:"jayz", hitSongId:byId("nas").songs[0].id, argument:"", locked:false}));
+
+  const song = byId("snoop").songs[0];                // Drop It Like It's Hot, iconic, #1
+  ok("hit card is worth less in Rap Ability than Hitmaker",
+     hitBonus(song,"rapAbility") < hitBonus(song,"hitmaker"));
+  ok("hit card caps at +8 in Hitmaker", hitBonus(song,"hitmaker")===8);
+
+  const opp = byId("kendrick");
+  const maxArg = argBonus('Kendrick has never had a "In Da Club" moment; in 2003 that single sold 5 million and owned every radio format.', "hitmaker", opp);
+  ok("argument bonus caps at +6", maxArg.pts===6);
+  ok("empty argument scores 0", argBonus("", "hitmaker", opp).pts===0);
+  ok("vague argument scores low", argBonus("he is just better bro", "hitmaker", opp).pts <= 1);
+
+  const g7 = seeded();
+  const pairs = [["jayz","snoop"],["nas","kendrick"],["50cent","dre"],["dmx","natedogg"],["jarule","larryjune"]];
+  pairs.forEach(([a,b])=>{ play(g7,a,b); advanceRound(g7); });
+  ok("five rounds completes the match", g7.round===5 && g7.rounds.length===5 && isComplete(g7));
+  ok("match ends in recap or final boss", g7.screen==="recap" || g7.finalBoss===true);
+
+  const gHit = seeded(); gHit.round = 1;
+  gHit.sel[0] = {artistId:"jarule", hitSongId:byId("jarule").songs[0].id, argument:"", locked:true};
+  gHit.sel[1] = {artistId:"snoop",  hitSongId:null, argument:"", locked:true};
+  resolveRound(gHit, judgeRound(gHit));
+  ok("best hit card is credited even on a drawn round",
+     matchStats(gHit).bestHit.indexOf("Always on Time") > -1);
+
+  const md = recapMarkdown(g7);
+  ok("recap lists both rosters", md.includes("Jay-Z") && md.includes("Snoop Dogg"));
+  ok("recap contains the final score",
+     md.includes("## Final Score") && md.includes(String(g7.players[0].score)));
+  ok("recap contains all five rounds", CATS.every(c=>md.includes(c.name)));
+  ok("recap labels ratings provisional", md.includes("provisional"));
+
+  document.getElementById("app").innerHTML =
+    '<h1>SELF TEST</h1><p class="' + (fail?"bad":"ok") + '"><b>' + pass + ' passed, ' + fail + ' failed</b></p>' +
+    '<div class="panel tlog">' + out.map(l =>
+      '<span class="' + (l.indexOf("FAIL")===0?"bad":"ok") + '">' + esc(l) + '</span>').join("\n") + '</div>' +
+    '<button class="wide" onclick="location.hash=\'\';location.reload()">Back to game</button>';
+}
+
+/* ---------- BOOT --------------------------------------------- */
+addEventListener("hashchange", ()=>location.reload());   // so #test works mid-game
+if(location.hash === "#test") runTests(); else render();
+</script>
+</body>
+</html>
