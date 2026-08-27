@@ -28,8 +28,13 @@ Calls are graded by price: calling a pot-sized bet says far more than
 completing the blind. Watch the grid collapse when you raise.
 
 **Its reasoning is sealed, not retrofitted.** Showing its equity mid-hand
-would tell you what it holds, so it commits to a hash and reveals at showdown.
-(FNV-1a — tamper-evident for a demo, not cryptographic.)
+would tell you what it holds, so during the hand it explains itself using only
+information you already have — the action, its size, and the break-even
+frequency that size implies ("a bet this size has to work 41.2% of the time, so
+that is the share of my range here that is bluffing"). The full reasoning is
+committed to a hash and revealed at showdown, or the moment you fold — so you
+find out whether you just folded to a bluff. (FNV-1a — tamper-evident for a
+demo, not cryptographic.)
 
 ## What it is not
 
