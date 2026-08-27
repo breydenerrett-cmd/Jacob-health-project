@@ -26,6 +26,7 @@ button{font:inherit;color:var(--ink);background:var(--panel2);
   border:1px solid var(--line);border-radius:10px;padding:12px 16px;
   cursor:pointer;min-height:46px}
 button:hover:not(:disabled){border-color:#4a5568}
+:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
 button:disabled{opacity:.35;cursor:not-allowed}
 button.primary{background:#2f68d8;border-color:#2f68d8;font-weight:600;width:100%}
 button.primary:hover:not(:disabled){background:#3a76ea}
@@ -67,6 +68,10 @@ label{display:block;margin:12px 0 4px;font-size:14px;color:var(--dim)}
   color:var(--dim);font-size:14px;margin:7px 0;white-space:pre-wrap}
 .rubric{font-size:13px;color:var(--dim);margin:6px 0 0}
 .rubric span{display:block;padding:1px 0}
+details.panel summary{list-style:none}
+details.panel summary::-webkit-details-marker{display:none}
+details.panel summary:after{content:" +";color:var(--dim)}
+details[open].panel summary:after{content:" \2013"}
 .pass{min-height:66vh;display:grid;place-content:center;text-align:center;gap:16px}
 .foot{color:#5c6577;font-size:12px;text-align:center;margin-top:34px;line-height:1.6}
 .ok{color:var(--good)} .bad{color:#ff6b6b}
@@ -234,6 +239,12 @@ function draft(g,pi,artistId){
 }
 const draftComplete = g => g.players.every(p=>p.roster.length===5);
 const drafterIdx = g => g.draftTurn % 2;
+function undoDraft(g){
+  if(g.draftTurn === 0) return false;
+  g.draftTurn--;
+  g.players[drafterIdx(g)].roster.pop();
+  return true;
+}
 
 function canPlay(g,pi,artistId){
   const p = g.players[pi];
@@ -446,8 +457,12 @@ let setupTmp = {p1:"Brey", p2:"Jake", coast:"east"};
 const app = document.getElementById("app");
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const initials = n => n.replace(/[^A-Za-z0-9$ ]/g,"").split(/\s+/).slice(0,2)
-  .map(w=>w[0]||"").join("").toUpperCase() || "??";
+const initials = n => {
+  const t = n.replace(/[^A-Za-z0-9$ ]/g,"").split(/\s+/)
+    .filter(w=>w && !/^(the|da|a|of|wit)$/i.test(w));
+  if(!t.length) return "??";
+  return (t.length===1 ? t[0].slice(0,3) : t.slice(0,2).map(w=>w[0]).join("")).toUpperCase();
+};
 const cc = c => c==="east" ? "East" : "West";
 const tileFor = a => '<div class="tile ' + (a.coast==="east"?"tEast":"tWest") + '">' + esc(initials(a.name)) + '</div>';
 
@@ -514,7 +529,19 @@ function renderSetup(){
     '<p class="sub" style="margin-top:10px">Player 2 gets the other coast. ' +
       'Each artist can be played in only one round — spend them wisely.</p>' +
     '<div style="margin-top:12px"><button class="primary" data-act="start">Start Match</button></div>' +
-    '</div>' + footer;
+    '</div>' +
+    '<details class="panel"><summary style="cursor:pointer"><b>How it works</b> ' +
+      '<span class="sub">— 30 seconds</span></summary>' +
+      '<p class="sub">Draft five artists from your coast, alternating picks.</p>' +
+      '<p class="sub">Then five rounds: <b>' + CATS.map(c=>c.name).join(" &rarr; ") + '</b>. ' +
+      'Each round you pick one artist and make a short case for them. ' +
+      '<b>An artist can only be played once</b>, so the question is never who is best — ' +
+      'it is which round to spend them on.</p>' +
+      '<p class="sub">You each get <b>one Hit Card</b> per match: a signature song, worth far ' +
+      'more in Hitmaker or Superstar than in Rap Ability.</p>' +
+      '<p class="sub">The judge adds <b>card rating + argument + Hit Card</b> and shows every ' +
+      'number. Rounds within 1.5 points are a draw; a tied match goes to a Final Boss round ' +
+      'where burned artists come back.</p></details>' + footer;
 }
 
 function renderDraft(){
@@ -528,11 +555,17 @@ function renderDraft(){
     '<div class="score"><div><b class="'+p.coast+'">'+esc(p.name)+'</b> is picking' +
       '<div class="sub">'+cc(p.coast)+' Coast &middot; pick ' + (p.roster.length+1) + ' of 5</div></div>' +
       '<div class="big">'+p.roster.length+'/5</div></div>' +
+    '<div class="panel" style="margin:10px 0;padding:10px 12px"><div class="mt" style="margin-bottom:5px">' +
+      'You will face these five, in order — draft for all of them:</div><div class="row wrap" style="gap:6px">' +
+      CATS.map(c=>'<span class="badge">'+c.name+'</span>').join("") + '</div></div>' +
     '<input type="text" id="q" placeholder="Search artist or city" value="'+esc(state.search||"")+'">' +
     '<h3>Available &mdash; ' + cc(p.coast) + '</h3>' +
     (pool.length ? pool.map(a=>artistCard(a,{act:"pick"})).join("") : '<p class="sub">No match.</p>') +
     '<div class="grid2" style="margin-top:14px">' +
-      rosterCol(0) + rosterCol(1) + '</div>' + footer;
+      rosterCol(0) + rosterCol(1) + '</div>' +
+    (state.draftTurn ? '<button class="wide" data-act="undo" style="margin-top:10px">Undo last pick — ' +
+      esc(byId(state.players[(state.draftTurn-1)%2].roster.slice(-1)[0]).name) + '</button>' : "") +
+    footer;
   const q2 = document.getElementById("q");
   q2.oninput = e => { state.search = e.target.value; render(); document.getElementById("q").focus(); };
 }
@@ -709,6 +742,7 @@ document.addEventListener("click", e => {
     }
     return;
   }
+  if(act==="undo"){ if(undoDraft(state)){ state.search=""; save(); render(); } return; }
   if(act==="redraft"){
     state.players.forEach(p=>p.roster=[]); state.draftTurn=0; state.screen="draft";
     save(); render(); return;
@@ -806,6 +840,17 @@ function runTests(){
   ok("category changes who is favoured", j5.winner===0 && j5b.winner===0);
 
   // equal cards draw; a real gap does not
+  const gU = newGame("A","B","east");
+  draft(gU,0,"jayz"); draft(gU,1,"snoop"); draft(gU,0,"nas");
+  ok("undo removes the last pick from the right player",
+     undoDraft(gU) && gU.players[0].roster.length===1 && gU.players[1].roster.length===1);
+  ok("undo returns the artist to the pool", canDraft(gU,0,"nas"));
+  ok("undo hands the turn back to that player", drafterIdx(gU)===0);
+  undoDraft(gU); undoDraft(gU);
+  ok("undo stops at an empty draft", !undoDraft(gU) && gU.draftTurn===0);
+  ok("initials disambiguate similar names",
+     initials("Jay-Z")!==initials("Jadakiss") && initials("Snoop Dogg")==="SD");
+
   const gDraw = seeded();
   gDraw.round = 1;                                    // hitmaker: Ja Rule 88 vs Snoop 88
   gDraw.sel[0] = {artistId:"jarule", hitSongId:null, argument:"", locked:true};
