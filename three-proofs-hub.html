@@ -1,0 +1,187 @@
+<title>Three Proofs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --paper:#EEF1F6; --card:#FFFFFF; --ink:#0E141C; --muted:#5A6675;
+  --rule:#D5DCE6; --rule-soft:#E6EBF2;
+  --accent:#1B44DE; --accent-soft:#E4E9FD;
+  --verified:#0B6B45; --verified-soft:#DCF0E6;
+  --shadow:0 1px 2px rgba(14,20,28,.05), 0 8px 24px -12px rgba(14,20,28,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B1017; --card:#131A24; --ink:#E9EEF5; --muted:#93A1B2;
+    --rule:#242F3D; --rule-soft:#1B2430;
+    --accent:#7A9BFF; --accent-soft:#16233F;
+    --verified:#4FD69C; --verified-soft:#10261D;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0B1017; --card:#131A24; --ink:#E9EEF5; --muted:#93A1B2;
+  --rule:#242F3D; --rule-soft:#1B2430;
+  --accent:#7A9BFF; --accent-soft:#16233F;
+  --verified:#4FD69C; --verified-soft:#10261D;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font:400 17px/1.6 "Source Serif 4",Georgia,serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:760px; margin:0 auto; padding:38px 20px 80px;}
+.eyebrow{
+  font:700 11px/1 "JetBrains Mono",ui-monospace,monospace;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--accent);
+}
+h1{
+  font:800 clamp(38px,8vw,60px)/0.98 Archivo,system-ui,sans-serif;
+  letter-spacing:-.025em; margin:14px 0 0; text-wrap:balance;
+}
+.lede{font-size:18.5px; color:var(--muted); margin:16px 0 0; max-width:60ch;}
+.lede b{color:var(--ink); font-weight:600;}
+.rule{height:1px; background:var(--rule); border:0; margin:34px 0 0;}
+
+.meta{display:flex; flex-wrap:wrap; gap:0; margin:26px 0 0;
+  border:1px solid var(--rule); border-radius:10px; overflow:hidden; background:var(--card);}
+.meta div{flex:1 1 120px; padding:13px 15px; border-right:1px solid var(--rule-soft);}
+.meta div:last-child{border-right:0}
+.meta dt{font:700 10px/1 "JetBrains Mono",monospace; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); margin:0 0 6px;}
+.meta dd{margin:0; font:700 21px/1 Archivo,sans-serif; font-variant-numeric:tabular-nums;}
+
+.exhibit{
+  background:var(--card); border:1px solid var(--rule); border-radius:14px;
+  padding:24px 22px; margin:20px 0 0; box-shadow:var(--shadow);
+}
+.ehead{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+.num{
+  font:700 12px/1 "JetBrains Mono",monospace; color:var(--accent);
+  background:var(--accent-soft); border-radius:5px; padding:6px 8px; letter-spacing:.06em;
+}
+.exhibit h2{
+  font:700 clamp(23px,5vw,29px)/1.1 Archivo,sans-serif; letter-spacing:-.018em;
+  margin:0; flex:1 1 auto; text-wrap:balance;
+}
+.claim{font-size:17.5px; color:var(--muted); margin:11px 0 0; max-width:58ch;}
+.claim b{color:var(--ink); font-weight:600;}
+
+.steps{list-style:none; padding:0; margin:19px 0 0; counter-reset:s;}
+.steps li{
+  position:relative; padding:0 0 0 32px; margin:0 0 11px;
+  counter-increment:s; font-size:16.5px;
+}
+.steps li:last-child{margin-bottom:0}
+.steps li::before{
+  content:counter(s); position:absolute; left:0; top:2px;
+  width:21px; height:21px; border-radius:50%;
+  border:1px solid var(--rule); color:var(--muted); background:var(--paper);
+  font:700 11px/19px "JetBrains Mono",monospace; text-align:center;
+}
+.steps b{font-weight:600;}
+.watch{
+  margin:18px 0 0; padding:13px 15px; border-left:3px solid var(--accent);
+  background:var(--accent-soft); border-radius:0 8px 8px 0; font-size:16px;
+}
+.watch strong{font:700 10.5px/1 "JetBrains Mono",monospace; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent); display:block; margin-bottom:6px;}
+
+.checks{margin:18px 0 0; border-top:1px solid var(--rule-soft); padding-top:14px;}
+.check{display:flex; gap:9px; align-items:flex-start; margin:0 0 7px;
+  font:500 13.5px/1.45 "JetBrains Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; color:var(--muted);}
+.check:last-child{margin-bottom:0}
+.check i{
+  flex:0 0 auto; width:16px; height:16px; margin-top:2px; border-radius:50%;
+  background:var(--verified-soft); color:var(--verified); font-style:normal;
+  font-size:10px; line-height:16px; text-align:center; font-weight:700;
+}
+.check b{color:var(--ink); font-weight:700;}
+
+.go{
+  display:inline-flex; align-items:center; gap:9px; margin:20px 0 0;
+  background:var(--accent); color:#fff; text-decoration:none;
+  font:600 16px/1 Archivo,sans-serif; padding:14px 20px; border-radius:9px;
+  transition:transform .12s ease, filter .12s ease;
+}
+.go:hover{filter:brightness(1.08); transform:translateY(-1px);}
+.go span{font:700 15px/1 "JetBrains Mono",monospace;}
+a:focus-visible,.go:focus-visible{outline:2px solid var(--accent); outline-offset:3px;}
+
+.note{margin:30px 0 0; font-size:16px; color:var(--muted); max-width:62ch;}
+.note b{color:var(--ink); font-weight:600;}
+footer{margin:38px 0 0; padding-top:20px; border-top:1px solid var(--rule);
+  font:500 13px/1.7 "JetBrains Mono",monospace; color:var(--muted);}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Built in one session · nothing pre-made</div>
+  <h1>Three Proofs</h1>
+  <p class="lede">Three working apps, each one built from scratch to prove something different — and each one carrying <b>numbers you can check against a public source while it runs</b>. No installs, no accounts, no network. Open a link and it works.</p>
+
+  <dl class="meta">
+    <div><dt>Apps</dt><dd>3</dd></div>
+    <div><dt>Lines</dt><dd>2,682</dd></div>
+    <div><dt>Tests</dt><dd>72</dd></div>
+    <div><dt>Dependencies</dt><dd>0</dd></div>
+  </dl>
+
+  <section class="exhibit">
+    <div class="ehead"><span class="num">RUN 1st</span><h2>The Machine</h2></div>
+    <p class="claim">Heads-up poker against a bot that shows the real math behind every decision — and <b>structurally cannot see your cards.</b> This is the one that survives a skeptic.</p>
+    <ol class="steps">
+      <li>Hit <b>Verify the math</b>. It deals every one of 1,712,304 possible boards, live, and lands on 81.9461%. <b>Google "AA vs KK equity" while it runs.</b></li>
+      <li>Open <b>What the bot actually sees</b> — its literal input. Your cards are not in it. The header counts every decision it has audited.</li>
+      <li>Play a few hands. <b>Raise big once</b> and watch the grid of your possible hands collapse from 1,326 down.</li>
+      <li>Fold to one of its bets. It immediately reveals whether it had you beaten or was bluffing — with a hash proving it didn't rewrite the story after.</li>
+      <li>Hit <b>Let the bot cheat</b>. Same bot, now fed your real cards. It behaves completely differently.</li>
+    </ol>
+    <div class="watch"><strong>The moment</strong>It starts each hand assuming you could hold any two cards, then narrows that purely from how you bet. Watching the grid go dark is the part people don't have an explanation for.</div>
+    <div class="checks">
+      <div class="check"><i>✓</i><span>A♠A♥ vs K♠K♦ &rarr; <b>81.9461%</b> over all 1,712,304 runouts — published value 81.9461%</span></div>
+      <div class="check"><i>✓</i><span>All <b>2,598,960</b> five-card hands enumerated; every category count matches published frequencies</span></div>
+      <div class="check"><i>✓</i><span><b>37/37</b> in-page tests, including a planted-leak control that proves the audit isn't fake</span></div>
+    </div>
+    <a class="go" href="https://claude.ai/code/artifact/ae771567-3144-40b7-8eb7-e0251aed6470" target="_blank" rel="noopener">Open The Machine <span>&rarr;</span></a>
+  </section>
+
+  <section class="exhibit">
+    <div class="ehead"><span class="num">RUN 2nd</span><h2>Rate My Parlay</h2></div>
+    <p class="claim">Real sportsbook math on a bet slip <b>he types in himself</b>. Fast, personal, and impossible to write off as a canned demo.</p>
+    <ol class="steps">
+      <li>Hand him the screen. <b>Have him enter a real parlay</b> — his actual legs, his actual odds.</li>
+      <li>Read the true win probability out loud before he sees it.</li>
+      <li>Add one more leg and watch the Sucker Meter climb.</li>
+    </ol>
+    <div class="watch"><strong>The moment</strong>It converts American odds to true implied probability and exact payout — so the number is his bet, not a demo bet. The roast escalates with how deranged the slip actually is.</div>
+    <div class="checks">
+      <div class="check"><i>✓</i><span>Implied probability from American odds; combined across legs</span></div>
+      <div class="check"><i>✓</i><span>Payout exact to the cent — hand-verified: <b>-150 + 120 on $20 &rarr; 27.3% / $73.33</b></span></div>
+    </div>
+    <a class="go" href="https://claude.ai/code/artifact/575e2705-ea48-4d59-b5d4-004f2e8e1cdf" target="_blank" rel="noopener">Open Rate My Parlay <span>&rarr;</span></a>
+  </section>
+
+  <section class="exhibit">
+    <div class="ehead"><span class="num">RUN 3rd</span><h2>Coast Clash</h2></div>
+    <p class="claim">A two-player East-vs-West rap debate game — <b>a whole product that came out of a casual argument.</b> This is the "you could build the thing you were just talking about" one.</p>
+    <ol class="steps">
+      <li>Two names, pick a coast, draft five artists each.</li>
+      <li>Play all five rounds. <b>Each artist can only be used once</b> — that's the whole game.</li>
+      <li>Copy the Markdown recap at the end.</li>
+    </ol>
+    <div class="watch"><strong>The moment</strong>Round one shows Jay-Z at 95 for Superstar — and 98 for Legacy. Spending him now means not having him later. That tension is the product.</div>
+    <div class="checks">
+      <div class="check"><i>✓</i><span><b>40</b>-artist dataset; ratings labelled provisional, chart peaks only where actually known</span></div>
+      <div class="check"><i>✓</i><span><b>35/35</b> in-page rule tests</span></div>
+    </div>
+    <a class="go" href="https://claude.ai/code/artifact/b0346da1-6e93-4318-84bf-7358707bf8fd" target="_blank" rel="noopener">Open Coast Clash <span>&rarr;</span></a>
+  </section>
+
+  <hr class="rule">
+  <p class="note"><b>If you only have two minutes:</b> open The Machine, hit Verify, and let him look up the number on his phone while it counts. That single moment does more work than the rest of the page.</p>
+  <p class="note">Each app is one self-contained HTML file. They run offline, from a file on a laptop, with no server and no dependencies — so nothing can quietly fail in front of an audience.</p>
+
+  <footer>3 apps · 2,682 lines · 72 tests passing · 0 dependencies<br>Every claim above is checkable inside the app itself.</footer>
+</div>

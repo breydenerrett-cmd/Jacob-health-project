@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rate My Parlay</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --felt:#12271f; --felt2:#1a3529; --felt3:#204133; --line:#2c4a3c;
+  --ink:#f4ecd8; --dim:#9fb3a8; --gold:#d9a441; --red:#e2596b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--felt);color:var(--ink);
+  font:16px/1.5 Archivo,system-ui,-apple-system,sans-serif;
+  -webkit-text-size-adjust:100%}
+#app{max-width:620px;margin:0 auto;padding:22px 16px 60px}
+.eyebrow{font:600 12px/1 IBM Plex Mono,ui-monospace,monospace;color:var(--gold);
+  letter-spacing:.16em;text-transform:uppercase}
+h1{font-family:"Archivo Black",Impact,system-ui,sans-serif;font-weight:400;
+  font-size:clamp(34px,9vw,46px);line-height:.98;margin:6px 0 6px;text-wrap:balance}
+.sub{color:var(--dim);font-size:15px;margin:0 0 20px;max-width:46ch}
+button{font:600 15px Archivo,sans-serif;color:var(--ink);background:var(--felt3);
+  border:1px solid var(--line);border-radius:9px;padding:11px 15px;cursor:pointer;min-height:44px}
+button:hover{border-color:#3d6552}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.ticket{background:var(--felt2);border:1px solid var(--line);border-radius:14px;
+  padding:18px;margin:0 0 16px;
+  background-image:radial-gradient(circle,var(--felt) 3px,transparent 3.5px);
+  background-size:100% 14px;background-position:0 0,0 100%;
+  border-top:3px dashed var(--line);border-bottom:3px dashed var(--line)}
+.ticket-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.ticket-head b{font-family:"Archivo Black";font-weight:400;letter-spacing:.02em;font-size:15px}
+.ticket-head span{font:500 12px IBM Plex Mono,monospace;color:var(--dim)}
+.leg{display:grid;grid-template-columns:1fr 92px 34px;gap:8px;margin:8px 0;align-items:center}
+.leg input{font:inherit;color:var(--ink);background:var(--felt);border:1px solid var(--line);
+  border-radius:8px;padding:10px 11px;width:100%;min-height:42px}
+.leg input.odds{font:600 15px IBM Plex Mono,monospace;text-align:center;font-variant-numeric:tabular-nums}
+.leg input::placeholder{color:#5c7568}
+.rm{background:transparent;border:1px solid var(--line);border-radius:8px;min-height:42px;
+  padding:0;color:var(--dim);font-size:16px;line-height:1}
+.rm:hover{color:var(--red);border-color:var(--red)}
+.addrow{width:100%;margin-top:6px;border-style:dashed;color:var(--dim)}
+.stakerow{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:14px;
+  border-top:1px solid var(--line)}
+.stakerow label{font:600 12px IBM Plex Mono,monospace;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.1em}
+.stakerow input{font:700 17px IBM Plex Mono,monospace;color:var(--gold);background:var(--felt);
+  border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:110px;
+  font-variant-numeric:tabular-nums}
+.results{background:var(--felt2);border:1px solid var(--line);border-radius:14px;padding:20px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat{background:var(--felt);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+.stat .l{font:600 11px IBM Plex Mono,monospace;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.1em;margin-bottom:5px}
+.stat .v{font-family:"Archivo Black";font-weight:400;font-size:24px;
+  font-variant-numeric:tabular-nums;line-height:1}
+.stat .v.gold{color:var(--gold)}
+.gauge-label{display:flex;justify-content:space-between;font:600 11px IBM Plex Mono,monospace;
+  color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.gauge{height:14px;border-radius:7px;background:var(--felt);border:1px solid var(--line);
+  overflow:hidden;position:relative}
+.gauge-fill{height:100%;border-radius:7px 0 0 7px;
+  background:linear-gradient(90deg,var(--gold),var(--red));transition:width .25s ease}
+.score{display:flex;align-items:baseline;gap:8px;margin:10px 0 4px}
+.score b{font-family:"Archivo Black";font-weight:400;font-size:38px;
+  font-variant-numeric:tabular-nums}
+.score .tier{font:700 13px Archivo;color:var(--red);text-transform:uppercase;letter-spacing:.04em}
+.roast{font-size:15.5px;line-height:1.5;margin:8px 0 0;color:var(--ink)}
+.compare{font:500 13px IBM Plex Mono,monospace;color:var(--dim);margin-top:10px;
+  padding-top:10px;border-top:1px dashed var(--line)}
+.compare b{color:var(--gold)}
+.empty{color:var(--dim);font-size:14px;text-align:center;padding:20px 0}
+.foot{color:#5c7568;font-size:12px;text-align:center;margin-top:26px;line-height:1.6}
+@media(max-width:400px){.leg{grid-template-columns:1fr 78px 30px}}
+</style>
+</head>
+<body><div id="app"></div>
+<script>
+"use strict";
+
+/* odds math */
+const impliedProb = o => o>0 ? 100/(o+100) : (-o)/((-o)+100);
+const decimalOdds = o => o>0 ? o/100+1 : 100/(-o)+1;
+
+function hash(str){ let h=0; for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))|0; return Math.abs(h); }
+
+const TIERS = [
+  {max:20, label:"CIVILIAN", lines:[
+    "Barely a bet. This is what a financial advisor would call diversification.",
+    "This is basically a savings account with extra steps."]},
+  {max:40, label:"RESPECTABLE", lines:[
+    "Respectable risk. Your bookie is mildly disappointed in you.",
+    "A grown-up bet. Boring, but you'll probably see some of this money again."]},
+  {max:60, label:"GAMBLING NOW", lines:[
+    "Now we're gambling. This is the parlay equivalent of a yellow light.",
+    "Solid degenerate energy. Nothing your bookie hasn't seen before."]},
+  {max:80, label:"UNHINGED", lines:[
+    "This is not a bet, this is a cry for help wearing a parlay costume.",
+    "Vegas built an entire wing of the casino on parlays exactly like this."]},
+  {max:101, label:"CERTIFIED DEGENERATE", lines:[
+    "Certified degenerate. The sportsbook already spent your money on their yacht.",
+    "This parlay has a better shot at becoming a group chat legend than actually hitting."]},
+];
+const ANALOGIES = [
+  {min:.5, txt:"flipping heads on your first try"},
+  {min:.25, txt:"flipping heads twice in a row"},
+  {min:.10, txt:"flipping heads three times in a row"},
+  {min:.05, txt:"flipping heads four times in a row"},
+  {min:.02, txt:"getting dealt a pair on the first hand"},
+  {min:0, txt:"your ex texting back first"},
+];
+
+let legs = [
+  {id:1, desc:"Chiefs -3.5", odds:"-150"},
+  {id:2, desc:"Mahomes 2+ TD passes", odds:"+120"},
+];
+let nextId = 3;
+let stake = 20;
+
+const app = document.getElementById("app");
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => n.toLocaleString("en-US",{maximumFractionDigits:2,minimumFractionDigits:2});
+const pct = n => (n*100).toFixed(1) + "%";
+
+function render(){
+  app.innerHTML =
+    '<div class="eyebrow">Degenerate Tools&trade;</div>' +
+    '<h1>RATE MY PARLAY</h1>' +
+    '<p class="sub">Real sportsbook math on your actual bet slip. Vegas does not round in your favor — let us see how bad it really is.</p>' +
+    '<div class="ticket">' +
+      '<div class="ticket-head"><b>BET SLIP</b><span id="legcount"></span></div>' +
+      '<div id="legs"></div>' +
+      '<button class="addrow" data-act="add">+ Add a leg</button>' +
+      '<div class="stakerow"><label for="stake">Stake $</label>' +
+        '<input id="stake" type="text" inputmode="decimal" value="' + stake + '"></div>' +
+    '</div>' +
+    '<div class="results" id="results"></div>' +
+    '<div class="foot">This is a probability calculator, not financial advice.<br>Please gamble responsibly — the house always has an edge.</div>';
+  renderLegs();
+  updateLegCount();
+  document.getElementById("stake").oninput = e => {
+    const v = parseFloat(e.target.value); stake = isNaN(v) ? 0 : v; updateResults();
+  };
+  updateResults();
+}
+
+function updateLegCount(){
+  const el = document.getElementById("legcount");
+  if(el) el.textContent = legs.length + " LEG" + (legs.length===1?"":"S");
+}
+function renderLegs(){
+  const c = document.getElementById("legs");
+  c.innerHTML = legs.map(l =>
+    '<div class="leg" data-id="'+l.id+'">' +
+      '<input class="desc" placeholder="e.g. Lakers +6.5" value="'+esc(l.desc)+'">' +
+      '<input class="odds" placeholder="-150" value="'+esc(l.odds)+'">' +
+      '<button class="rm" data-act="rm" data-id="'+l.id+'" aria-label="Remove leg">&times;</button>' +
+    '</div>').join("");
+  c.querySelectorAll(".leg").forEach(row=>{
+    const id = +row.dataset.id;
+    row.querySelector(".desc").oninput = e => { legs.find(l=>l.id===id).desc = e.target.value; };
+    row.querySelector(".odds").oninput = e => { legs.find(l=>l.id===id).odds = e.target.value; updateResults(); };
+  });
+}
+
+function updateResults(){
+  const valid = legs.map(l=>({...l, n: parseFloat(l.odds)}))
+    .filter(l=>!isNaN(l.n) && l.n!==0 && Math.abs(l.n)>=100);
+  const r = document.getElementById("results");
+  if(!valid.length){
+    r.innerHTML = '<div class="empty">Add at least one leg with odds like <b style="color:var(--ink)">-150</b> or <b style="color:var(--ink)">+240</b> to see the damage.</div>';
+    return;
+  }
+  const combinedProb = valid.reduce((p,l)=>p*impliedProb(l.n),1);
+  const combinedDec = valid.reduce((p,l)=>p*decimalOdds(l.n),1);
+  const payout = stake * combinedDec;
+  const profit = payout - stake;
+  const score = Math.max(0, Math.min(100, Math.round((1-combinedProb)*70 + (valid.length-1)*10)));
+  const tier = TIERS.find(t=>score<=t.max);
+  const sig = valid.map(l=>l.n).join(",") + "|" + score;
+  const line = tier.lines[hash(sig) % tier.lines.length];
+  const analogy = ANALOGIES.find(a=>combinedProb>=a.min).txt;
+
+  r.innerHTML =
+    '<div class="row2">' +
+      '<div class="stat"><div class="l">Vegas gives you</div><div class="v">' + pct(combinedProb) + '</div></div>' +
+      '<div class="stat"><div class="l">Payout on $' + fmt(stake) + '</div><div class="v gold">$' + fmt(payout) + '</div></div>' +
+    '</div>' +
+    '<div class="gauge-label"><span>Safe</span><span>Sucker Meter</span><span>Degenerate</span></div>' +
+    '<div class="gauge"><div class="gauge-fill" style="width:' + score + '%"></div></div>' +
+    '<div class="score"><b>' + score + '</b><span class="tier">' + tier.label + '</span></div>' +
+    '<p class="roast">' + line + '</p>' +
+    '<div class="compare">Vegas thinks you have a <b>' + pct(combinedProb) + '</b> shot at this. ' +
+      'That is about the same odds as ' + analogy + '. Profit if it hits: <b>$' + fmt(profit) + '</b>.</div>';
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  if(b.dataset.act === "add"){ legs.push({id:nextId++, desc:"", odds:""}); renderLegs(); updateLegCount(); updateResults(); }
+  if(b.dataset.act === "rm"){ legs = legs.filter(l=>l.id !== +b.dataset.id); renderLegs(); updateLegCount(); updateResults(); }
+});
+
+render();
+</script>
+</body>
+</html>
