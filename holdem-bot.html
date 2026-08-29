@@ -5,107 +5,141 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Machine</title>
 <style>
+/* Neutral slate chrome; green is reserved for the felt and for "verified".
+   Hierarchy comes from surface + type weight, not a border on everything. */
 :root{
-  --felt:#0e1a16; --p1:#152521; --p2:#1c322c; --line:#2a473f;
-  --ink:#eef4f1; --dim:#8fa89f; --gold:#d9a441; --red:#e2596b;
-  --good:#5ddb9a; --warn:#ffd166; --blue:#6ea8ff;
+  --bg:#0B0E13; --surface:#141A23; --raised:#1B2331; --line:#232B38;
+  --felt:#12241D; --felt-line:#1E3B2F;
+  --ink:#E9EDF4; --dim:#8793A6; --faint:#5A6577;
+  --gold:#E3AC49; --live:#4ADE80; --red:#F2617A; --accent:#5B8CFF;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--felt);color:var(--ink);
-  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-text-size-adjust:100%}
-#app{max-width:660px;margin:0 auto;padding:0 13px 70px}
-h1{font-size:25px;letter-spacing:.13em;margin:10px 0 2px}
-h2{font-size:18px;margin:14px 0 7px}
-h3{font-size:13px;margin:14px 0 6px;color:var(--dim);
-  text-transform:uppercase;letter-spacing:.11em}
+#app{max-width:620px;margin:0 auto;padding:0 16px 72px}
+h1{font-size:23px;letter-spacing:.10em;margin:14px 0 2px;font-weight:750}
+h2{font-size:19px;margin:0 0 6px;font-weight:700;letter-spacing:-.01em}
+h3{font-size:11px;margin:0 0 9px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.13em;font-weight:700}
 p{margin:7px 0}
 .sub{color:var(--dim);font-size:13.5px}
 .center{text-align:center}
 .mono{font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
-button{font:inherit;color:var(--ink);background:var(--p2);
-  border:1px solid var(--line);border-radius:9px;padding:11px 14px;
-  cursor:pointer;min-height:46px}
-button:hover:not(:disabled){border-color:#3d6a5c}
-button:disabled{opacity:.32;cursor:not-allowed}
-:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-button.primary{background:#2f68d8;border-color:#2f68d8;font-weight:600;width:100%}
-button.primary:hover:not(:disabled){background:#3a76ea}
+
+button{font:600 15px system-ui,sans-serif;color:var(--ink);background:var(--raised);
+  border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;min-height:48px}
+button:hover:not(:disabled){background:#222c3b}
+button:disabled{opacity:.3;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#08111f;
+  font-weight:700;width:100%}
+button.primary:hover:not(:disabled){background:#7AA3FF}
 button.wide{width:100%}
 button.danger{border-color:var(--red);color:var(--red)}
-input[type=text]{font:inherit;color:var(--ink);background:var(--p1);
-  border:1px solid var(--line);border-radius:9px;padding:11px 12px;width:100%;min-height:46px}
-label{display:block;margin:11px 0 4px;font-size:13.5px;color:var(--dim)}
-.panel{background:var(--p1);border:1px solid var(--line);
-  border-radius:11px;padding:13px;margin:11px 0}
+input[type=text]{font:16px system-ui,sans-serif;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:10px;padding:12px;width:100%;min-height:48px}
+label{display:block;margin:12px 0 5px;font-size:13px;color:var(--dim)}
+
+.panel{background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:15px;margin:12px 0}
 .row{display:flex;gap:8px;align-items:center}
 .row.wrap{flex-wrap:wrap}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-.hdr{position:sticky;top:0;z-index:5;background:var(--felt);
-  border-bottom:1px solid var(--line);padding:9px 0 8px;margin-bottom:2px}
-.hdr .r1{display:flex;justify-content:space-between;align-items:center;font-size:14px}
-.hdr b{font-variant-numeric:tabular-nums}
-.hdr .r2{display:flex;justify-content:space-between;color:var(--dim);
-  font-size:11.5px;margin-top:3px}
-.pot{font-size:19px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
-.badge{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
-  border:1px solid var(--line);border-radius:5px;padding:2px 5px;color:var(--dim)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+
+/* ---- header: the score line, and one sentence saying what this is ---- */
+.hdr{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 82%,transparent);
+  padding:12px 0 10px;margin-bottom:4px}
+.hdr .r1{display:flex;justify-content:space-between;align-items:center;
+  font-size:14.5px;gap:10px}
+.hdr b{font-variant-numeric:tabular-nums;font-weight:700}
+.hdr .r2{display:flex;justify-content:space-between;color:var(--faint);
+  font-size:11px;margin-top:5px;letter-spacing:.04em}
+.potwrap{text-align:center;line-height:1}
+.potlab{font-size:9.5px;letter-spacing:.18em;color:var(--faint);
+  text-transform:uppercase;display:block;margin-bottom:3px}
+.pot{font-size:21px;font-weight:750;color:var(--gold);font-variant-numeric:tabular-nums}
+.thesis{font-size:12.5px;color:var(--dim);text-align:center;
+  padding:9px 12px;margin:0 0 4px;background:var(--surface);
+  border:1px solid var(--line);border-radius:10px}
+.thesis b{color:var(--live);font-weight:600}
+
+.badge{font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:5px;padding:2px 6px;color:var(--faint)}
 .badge.btn{border-color:var(--gold);color:var(--gold)}
-.badge.act{border-color:var(--blue);color:var(--blue)}
-.badge.ok{border-color:var(--good);color:var(--good)}
+.badge.act{border-color:var(--accent);color:var(--accent)}
+.badge.ok{border-color:var(--live);color:var(--live)}
 .badge.bad{border-color:var(--red);color:var(--red)}
+
+/* ---- seats + the felt: the only green surface in the app ---- */
 .seat{display:flex;justify-content:space-between;align-items:center;
-  background:var(--p1);border:1px solid var(--line);border-radius:11px;
-  padding:10px 12px;margin:9px 0}
-.seat.turn{border-color:var(--gold)}
-.cards{display:flex;gap:5px}
-.card{width:38px;height:52px;border-radius:6px;background:#f4f1e8;color:#111;
+  padding:11px 4px;margin:0}
+.seat.turn .nm{color:var(--gold)}
+.seat .nm{font-weight:700;font-size:16px}
+.cards{display:flex;gap:6px}
+.card{width:42px;height:58px;border-radius:7px;background:#F4F1E9;color:#161616;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-weight:700;font-size:15px;line-height:1.05;flex:0 0 38px}
-.card.r{color:#c02638}
-.card.back{background:linear-gradient(135deg,#28483f,#1b3229);
-  border:1px solid var(--line);color:var(--dim);font-size:17px}
-.card.slot{background:transparent;border:1px dashed var(--line);color:transparent}
-.board{display:flex;gap:6px;justify-content:center;margin:13px 0}
-.gauge{height:11px;border-radius:6px;background:var(--p1);
-  border:1px solid var(--line);overflow:hidden;margin:5px 0}
-.gauge>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--good))}
-.eqnum{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
-.stat{display:flex;justify-content:space-between;padding:3px 0;font-size:13.5px;
-  border-bottom:1px dashed #1f3830}
-.stat b{font-variant-numeric:tabular-nums}
-.stat.hit{color:var(--warn)}
-.evtab{width:100%;border-collapse:collapse;font-size:13px;margin-top:5px}
-.evtab td,.evtab th{padding:4px 5px;border-bottom:1px dashed #1f3830;text-align:right}
+  font-weight:750;font-size:16px;line-height:1.05;flex:0 0 42px;
+  box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.card.r{color:#C42B41}
+.card.back{background:#1E2836;border:1px solid var(--line);color:var(--faint);
+  font-size:17px;box-shadow:none}
+.card.slot{background:transparent;border:1px dashed var(--felt-line);
+  color:transparent;box-shadow:none}
+.board{display:flex;gap:7px;justify-content:center;padding:16px 10px;
+  background:var(--felt);border:1px solid var(--felt-line);border-radius:14px;margin:4px 0}
+
+.gauge{height:8px;border-radius:5px;background:var(--bg);
+  border:1px solid var(--line);overflow:hidden;margin:7px 0}
+.gauge>i{display:block;height:100%;background:var(--accent)}
+.eqnum{font-size:27px;font-weight:750;font-variant-numeric:tabular-nums;line-height:1}
+.stat{display:flex;justify-content:space-between;padding:5px 0;font-size:13.5px;
+  border-bottom:1px solid var(--line);color:var(--dim)}
+.stat:last-child{border-bottom:0}
+.stat b{font-variant-numeric:tabular-nums;color:var(--ink)}
+.stat.hit{color:var(--gold)}
+.evtab{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.evtab td,.evtab th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:right}
 .evtab th:first-child,.evtab td:first-child{text-align:left}
-.evtab th{color:var(--dim);font-weight:600;font-size:11px;
-  text-transform:uppercase;letter-spacing:.07em}
-.evtab tr.pick{color:var(--good)}
-.evtab td{font-variant-numeric:tabular-nums}
-.rgrid{display:grid;grid-template-columns:repeat(13,1fr);gap:1px;margin:7px 0}
-.rc{aspect-ratio:1;display:grid;place-items:center;font-size:7.5px;
-  border-radius:2px;background:#12201c;color:#5f7a71;overflow:hidden}
-.rc.on{color:#0e1a16;font-weight:700}
-.log{font:11.5px/1.5 ui-monospace,Menlo,monospace;color:var(--dim);
-  max-height:120px;overflow-y:auto}
+.evtab th{color:var(--faint);font-weight:700;font-size:10px;
+  text-transform:uppercase;letter-spacing:.09em}
+.evtab tr.pick td{color:var(--live);font-weight:600}
+.evtab td{font-variant-numeric:tabular-nums;color:var(--dim)}
+
+/* ---- range grid: collapsed until it has something to say ---- */
+.rgrid{display:grid;grid-template-columns:repeat(13,1fr);gap:2px;margin:10px 0 6px}
+.rc{aspect-ratio:1;display:grid;place-items:center;font-size:7px;
+  border-radius:2px;background:#161D27;color:#46525F;overflow:hidden;
+  font-variant-numeric:tabular-nums}
+.rc.on{color:#08150F;font-weight:700}
+.log{font:11.5px/1.6 ui-monospace,Menlo,monospace;color:var(--dim);
+  max-height:112px;overflow-y:auto}
 .log div{padding:1px 0}
-.quote{border-left:3px solid var(--line);padding:2px 0 2px 10px;
-  color:var(--ink);font-size:14px;margin:7px 0}
-details.panel summary{cursor:pointer;list-style:none;font-size:14px}
+.quote{padding:0;color:var(--ink);font-size:15px;margin:2px 0 12px;line-height:1.45}
+
+details.panel summary{cursor:pointer;list-style:none;font-size:14.5px;
+  display:flex;justify-content:space-between;align-items:center;gap:10px}
 details.panel summary::-webkit-details-marker{display:none}
-details.panel summary:after{content:" +";color:var(--dim)}
-details[open].panel summary:after{content:" \2013"}
-pre{font:11px/1.45 ui-monospace,Menlo,monospace;color:var(--dim);
-  background:#0b1512;border:1px solid var(--line);border-radius:7px;
-  padding:9px;overflow-x:auto;margin:7px 0}
-.foot{color:#516860;font-size:11.5px;text-align:center;margin-top:28px;line-height:1.65}
-.ok{color:var(--good)} .bad{color:var(--red)} .gold{color:var(--gold)}
-.tlog{font:12px/1.65 ui-monospace,Menlo,monospace;white-space:pre-wrap}
-.banner{border:1px solid var(--red);background:#2a1418;border-radius:10px;
-  padding:11px;margin:10px 0;color:var(--red)}
-@media(max-width:400px){.card{width:33px;height:46px;flex:0 0 33px;font-size:13px}
-  .rc{font-size:6px}}
+details.panel summary:after{content:"＋";color:var(--faint);font-size:15px}
+details[open].panel summary:after{content:"−"}
+.sumnum{font:600 12px ui-monospace,Menlo,monospace;color:var(--dim);
+  font-variant-numeric:tabular-nums;white-space:nowrap;flex:0 0 auto}
+.foot a{color:var(--dim)}
+
+pre{font:11px/1.5 ui-monospace,Menlo,monospace;color:var(--dim);
+  background:var(--bg);border:1px solid var(--line);border-radius:9px;
+  padding:11px;overflow-x:auto;margin:9px 0}
+.foot{color:var(--faint);font-size:11.5px;text-align:center;margin-top:26px;line-height:1.7}
+.ok{color:var(--live)} .bad{color:var(--red)} .gold{color:var(--gold)}
+.tlog{font:12px/1.7 ui-monospace,Menlo,monospace;white-space:pre-wrap}
+.banner{border:1px solid var(--red);background:#2A1219;border-radius:12px;
+  padding:12px;margin:10px 0;color:var(--red)}
+@media(max-width:400px){
+  .card{width:37px;height:51px;flex:0 0 37px;font-size:14px}
+  .rc{font-size:5.5px}
+  #app{padding:0 12px 72px}
+}
 </style>
 </head>
 <body><div id="app"></div>
@@ -978,12 +1012,11 @@ function renderMenu(){
 }
 
 function footer(){
-  return '<div class="foot">Monte-Carlo / exact equity + Bayesian range filtering + ' +
-    'EV maximisation with derived bluff frequencies.<br>' +
-    '<b>Not CFR. Not a solver. Not GTO.</b> The opponent model is an assumption, ' +
-    'and it is printed on screen.<br>' +
-    '<a href="#" data-act="selftest" style="color:#6c8880">run the tests</a> · ' +
-    '<a href="#" data-act="verify" style="color:#6c8880">verify the equity engine</a></div>';
+  return '<div class="foot">' +
+    '<a href="#" data-act="selftest">run the tests</a> &middot; ' +
+    '<a href="#" data-act="verify">verify the equity engine</a><br>' +
+    'Exact / Monte-Carlo equity, Bayesian range filtering, EV maximisation. ' +
+    '<b>Not a solver, not GTO</b> &mdash; the opponent model is an assumption.</div>';
 }
 
 function header(g){
@@ -991,11 +1024,13 @@ function header(g){
   const auditCls = g.auditFail ? "bad" : "ok";
   return '<div class="hdr"><div class="r1">' +
     '<span>' + esc(g.seats[1].name) + btn(1) + ' <b>' + chips(g.seats[1].stack) + '</b></span>' +
-    '<span class="pot">' + chips(potOf(g)) + '</span>' +
+    '<span class="potwrap"><span class="potlab">Pot</span>' +
+      '<span class="pot">' + chips(potOf(g)) + '</span></span>' +
     '<span><b>' + chips(g.seats[0].stack) + '</b> ' + esc(g.seats[0].name) + btn(0) + '</span>' +
     '</div><div class="r2"><span>Hand #' + g.handNo + ' · ' + g.street.toUpperCase() + '</span>' +
     '<span class="' + auditCls + '">Bot inputs audited: ' + g.auditPass + '/' + g.auditTotal +
-    (g.auditFail ? " LEAK" : " clean") + '</span></div></div>';
+    (g.auditFail ? " LEAK" : " clean") + '</span></div></div>' +
+    '<div class="thesis">It <b>cannot see your cards</b>. Every decision shows its math.</div>';
 }
 
 function renderTable(reveal){
@@ -1011,7 +1046,7 @@ function renderTable(reveal){
   }
 
   h += '<div class="seat' + (g.actor===1 && g.phase==="act" ? " turn":"") + '">' +
-    '<div><b>' + esc(g.seats[1].name) + '</b>' +
+    '<div><span class="nm">' + esc(g.seats[1].name) + '</span>' +
     (g.seats[1].folded ? ' <span class="badge bad">FOLDED</span>' : '') +
     '<div class="sub">' + chips(g.seats[1].stack) +
     (g.bets[1] ? ' · in ' + chips(g.bets[1]) : '') + '</div></div>' +
@@ -1021,7 +1056,7 @@ function renderTable(reveal){
   h += '<div class="board">' + b.map(c=>cardEl(c,false)).join("") + '</div>';
 
   h += '<div class="seat' + (g.actor===0 && g.phase==="act" ? " turn":"") + '">' +
-    '<div><b>' + esc(g.seats[0].name) + '</b>' +
+    '<div><span class="nm">' + esc(g.seats[0].name) + '</span>' +
     (g.seats[0].folded ? ' <span class="badge bad">FOLDED</span>' : '') +
     '<div class="sub">' + chips(g.seats[0].stack) +
     (g.bets[0] ? ' · in ' + chips(g.bets[0]) : '') + '</div></div>' +
@@ -1035,8 +1070,8 @@ function renderTable(reveal){
   if(last && g.phase !== "thinking") h += lastActionPanel(last, g.phase === "done");
   h += readPanel(g);
   h += '<div class="grid2" style="margin-top:10px">' +
-    '<button data-act="cheat">' + (cfg.cheat ? "✓ Bot is CHEATING" : "Let the bot cheat") + '</button>' +
-    '<button data-act="turbo">' + (cfg.turbo ? "✓ Turbo" : "Turbo (skip think)") + '</button>' +
+    '<button data-act="cheat">' + (cfg.cheat ? "✓ Cheating" : "Let it cheat") + '</button>' +
+    '<button data-act="turbo">' + (cfg.turbo ? "✓ Turbo" : "Turbo") + '</button>' +
     '</div>' +
     '<button class="wide" data-act="quit" style="margin-top:8px">Leave table</button>';
   h += footer();
@@ -1116,8 +1151,13 @@ function readPanel(g){
          : 'unchanged') +
         ' <span style="opacity:.6">(' + n.afterW.toFixed(1) + ' left)</span></div>').join("")
     : '<div>No reads yet — every one of your 1,326 hands is still live.</div>';
-  return '<details class="panel" open><summary><b>What the bot thinks you have</b></summary>' +
-    '<div class="sub">Live combos <b>' + lc.n + ' / 1326</b> · weighted ' + lc.w.toFixed(1) + '</div>' +
+  const hasRead = g.narrowLog.some(n => n.pctCut >= 0.05);
+  return '<details class="panel"' + (hasRead ? ' open' : '') + '><summary>' +
+    '<b>The bot&rsquo;s read on you</b>' +
+    '<span class="sumnum">' + (hasRead ? Math.round(lc.w) + ' / 1326' : 'no read yet') +
+    '</span></summary>' +
+    '<div class="sub" style="margin-bottom:2px">Live combos <b>' + lc.n +
+    ' / 1326</b> · weighted <b>' + lc.w.toFixed(1) + '</b></div>' +
     grid +
     '<div class="log">' + log + '</div>' +
     '<div class="sub" style="margin-top:6px">Brighter = more likely, given only how you have bet. ' +
@@ -1126,7 +1166,8 @@ function readPanel(g){
 function eyesPanel(g){
   const info = buildInfoSet(g);
   const mine = g.seats[0].hole.map(E.cardStr).join(" ");
-  return '<details class="panel"><summary><b>What the bot actually sees</b></summary>' +
+  return '<details class="panel"><summary><b>What the bot can see</b>' +
+    '<span class="sumnum">' + Object.keys(info).length + ' fields</span></summary>' +
     '<pre>' + esc(JSON.stringify(info, null, 1)) + '</pre>' +
     '<div class="sub">Your cards are <b>' + esc(mine) + '</b>. Searched all ' +
     Object.keys(info).length + ' fields of the bot’s input for them — ' +
